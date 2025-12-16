@@ -25,3 +25,16 @@ export interface AnalysisResponseDto {
   conversionOpportunities: string;
   commercialRisks: string;
 }
+
+export interface CreatePublicationInput {
+  meliItemId: string;
+  title: string;
+  price: number;
+  status: string;
+  availableQuantity: number;
+  soldQuantity: number;
+  categoryId: string;
+  description?: string;
+}
+
+export interface UpdatePublicationInput extends Partial<CreatePublicationInput> {}

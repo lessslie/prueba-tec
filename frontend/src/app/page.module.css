@@ -54,6 +54,98 @@
   gap: 16px;
 }
 
+.actionsPanel {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panelSection {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panelSection h3 {
+  margin: 0;
+  color: #e5e7eb;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.formGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.formGrid input,
+.formGrid textarea,
+.importRow input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #e5e7eb;
+  padding: 10px;
+}
+
+.fullRow {
+  grid-column: 1 / -1;
+}
+
+.importRow {
+  display: flex;
+  gap: 10px;
+}
+
+.secondaryButton {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e5e7eb;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.secondaryButton:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dangerButton {
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.1);
+  color: #fecdd3;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.dangerButton:hover {
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.cardActions {
+  display: flex;
+  gap: 10px;
+}
+
 .card {
   background: #0b1220;
   border: 1px solid rgba(255, 255, 255, 0.06);
