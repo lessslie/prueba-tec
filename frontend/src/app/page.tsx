@@ -33,6 +33,9 @@ export default async function Home() {
             Importa desde ML, guarda en Postgres y genera recomendaciones con IA. Selecciona
             una publicación y corre el análisis.
           </p>
+          <a className={styles.linkButton} href={`${API_BASE}/meli/auth`}>
+            Conectar Mercado Libre
+          </a>
         </div>
         <div className={styles.badge}>
           Backend: {API_BASE.replace("http://", "").replace("https://", "")}
