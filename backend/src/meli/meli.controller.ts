@@ -22,8 +22,13 @@ export class MeliController {
   @Get('callback')
   @ApiOperation({ summary: 'OAuth callback from Mercado Libre' })
   @ApiResponse({ status: 200, description: 'Token stored successfully' })
-  async handleCallback(@Query() query: CallbackQueryDto) {
-    return this.meliService.handleCallback(query.code);
+  async handleCallback(@Query() query: CallbackQueryDto, @Res() res: Response) {
+    await this.meliService.handleCallback(query.code);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const redirectUrl = frontendUrl.includes('?')
+      ? `${frontendUrl}&meli=connected`
+      : `${frontendUrl}?meli=connected`;
+    return res.redirect(redirectUrl);
   }
 
   @Get('import/:itemId')
@@ -47,4 +52,3 @@ export class MeliController {
     return this.meliService.importItem(params.itemId);
   }
 }
-
