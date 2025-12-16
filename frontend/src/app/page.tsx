@@ -2,6 +2,8 @@ import styles from "./page.module.css";
 import { API_BASE } from "../lib/config";
 import type { PublicationDto } from "../lib/types";
 import { AnalyzeButton } from "../components/analyze-button";
+import { CreateOrImport } from "../components/create-or-import";
+import { PublicationCard } from "../components/publication-card";
 
 async function fetchPublications(): Promise<PublicationDto[]> {
   const res = await fetch(`${API_BASE}/publications`, { cache: "no-store" });
@@ -37,6 +39,8 @@ export default async function Home() {
         </div>
       </header>
 
+      <CreateOrImport />
+
       {error && <p className={styles.errorText}>{error}</p>}
 
       <section className={styles.grid}>
@@ -45,46 +49,9 @@ export default async function Home() {
             <p>No hay publicaciones aún. Importa una desde /meli/import/:itemId.</p>
           </div>
         )}
-        {publications.map((pub) => {
-          const description = pub.descriptions?.[0]?.description;
-          return (
-            <article className={styles.card} key={pub.id}>
-              <header className={styles.cardHeader}>
-                <div>
-                  <p className={styles.meliId}>{pub.meliItemId}</p>
-                  <h3>{pub.title}</h3>
-                </div>
-                <div className={styles.price}>
-                  ${pub.price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
-                </div>
-              </header>
-              <dl className={styles.meta}>
-                <div>
-                  <dt>Estado</dt>
-                  <dd>{pub.status}</dd>
-                </div>
-                <div>
-                  <dt>Stock</dt>
-                  <dd>{pub.availableQuantity}</dd>
-                </div>
-                <div>
-                  <dt>Vendidos</dt>
-                  <dd>{pub.soldQuantity}</dd>
-                </div>
-                <div>
-                  <dt>Categoría</dt>
-                  <dd>{pub.categoryId}</dd>
-                </div>
-              </dl>
-              {description && (
-                <p className={styles.description}>
-                  {description.length > 220 ? `${description.slice(0, 220)}…` : description}
-                </p>
-              )}
-              <AnalyzeButton publicationId={pub.id} />
-            </article>
-          );
-        })}
+        {publications.map((pub) => (
+          <PublicationCard publication={pub} key={pub.id} />
+        ))}
       </section>
     </div>
   );
