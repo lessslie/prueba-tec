@@ -31,6 +31,14 @@ export class MeliController {
     return res.redirect(redirectUrl);
   }
 
+  @Get('status')
+  @ApiOperation({ summary: 'Check if there is a valid Mercado Libre token stored' })
+  @ApiResponse({ status: 200, description: 'Connection status', schema: { example: { connected: true } } })
+  async status() {
+    const connected = await this.meliService.hasValidToken();
+    return { connected };
+  }
+
   @Get('import/:itemId')
   @ApiOperation({ summary: 'Import a publication from Mercado Libre and persist it' })
   @ApiParam({
