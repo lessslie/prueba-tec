@@ -1,66 +1,91 @@
-import Image from "next/image";
 import styles from "./page.module.css";
+import { API_BASE } from "../lib/config";
+import type { PublicationDto } from "../lib/types";
+import { AnalyzeButton } from "../components/analyze-button";
 
-export default function Home() {
+async function fetchPublications(): Promise<PublicationDto[]> {
+  const res = await fetch(`${API_BASE}/publications`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error("No se pudo cargar el listado de publicaciones");
+  }
+  return res.json();
+}
+
+export default async function Home() {
+  let publications: PublicationDto[] = [];
+  let error: string | null = null;
+
+  try {
+    publications = await fetchPublications();
+  } catch (err: any) {
+    error = err?.message || "Error cargando publicaciones";
+  }
+
   return (
     <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+      <header className={styles.hero}>
+        <div>
+          <p className={styles.eyebrow}>RataLibre · Technical test</p>
+          <h1>Publicaciones de Mercado Libre</h1>
+          <p className={styles.subtitle}>
+            Importa desde ML, guarda en Postgres y genera recomendaciones con IA. Selecciona
+            una publicación y corre el análisis.
           </p>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className={styles.badge}>
+          Backend: {API_BASE.replace("http://", "").replace("https://", "")}
         </div>
-      </main>
+      </header>
+
+      {error && <p className={styles.errorText}>{error}</p>}
+
+      <section className={styles.grid}>
+        {publications.length === 0 && !error && (
+          <div className={styles.empty}>
+            <p>No hay publicaciones aún. Importa una desde /meli/import/:itemId.</p>
+          </div>
+        )}
+        {publications.map((pub) => {
+          const description = pub.descriptions?.[0]?.description;
+          return (
+            <article className={styles.card} key={pub.id}>
+              <header className={styles.cardHeader}>
+                <div>
+                  <p className={styles.meliId}>{pub.meliItemId}</p>
+                  <h3>{pub.title}</h3>
+                </div>
+                <div className={styles.price}>
+                  ${pub.price.toLocaleString("es-AR", { minimumFractionDigits: 0 })}
+                </div>
+              </header>
+              <dl className={styles.meta}>
+                <div>
+                  <dt>Estado</dt>
+                  <dd>{pub.status}</dd>
+                </div>
+                <div>
+                  <dt>Stock</dt>
+                  <dd>{pub.availableQuantity}</dd>
+                </div>
+                <div>
+                  <dt>Vendidos</dt>
+                  <dd>{pub.soldQuantity}</dd>
+                </div>
+                <div>
+                  <dt>Categoría</dt>
+                  <dd>{pub.categoryId}</dd>
+                </div>
+              </dl>
+              {description && (
+                <p className={styles.description}>
+                  {description.length > 220 ? `${description.slice(0, 220)}…` : description}
+                </p>
+              )}
+              <AnalyzeButton publicationId={pub.id} />
+            </article>
+          );
+        })}
+      </section>
     </div>
   );
 }

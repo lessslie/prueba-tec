@@ -1,0 +1,27 @@
+export interface PublicationDescriptionDto {
+  id: string;
+  description: string;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string | Date;
+}
+
+export interface PublicationDto {
+  id: string;
+  meliItemId: string;
+  title: string;
+  price: number;
+  status: string;
+  availableQuantity: number;
+  soldQuantity: number;
+  categoryId: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  descriptions?: PublicationDescriptionDto[];
+}
+
+export interface AnalysisResponseDto {
+  titleRecommendations: string;
+  descriptionIssues: string;
+  conversionOpportunities: string;
+  commercialRisks: string;
+}
