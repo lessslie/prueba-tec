@@ -9,4 +9,16 @@ export interface PublicationSummary {
   categoryId: string;
 }
 
+export interface MeliPublicationPayload {
+  meliItemId: string;
+  title: string;
+  price: number;
+  status: string;
+  availableQuantity: number;
+  soldQuantity: number;
+  categoryId: string;
+  description?: string;
+  metadata?: Record<string, unknown> | null;
+}
+
 

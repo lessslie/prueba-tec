@@ -17,7 +17,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('RataLibre API')
-    .setDescription('API para análisis de publicaciones de Mercado Libre')
+    .setDescription('API para analisis de publicaciones de Mercado Libre')
     .setVersion('1.0.0')
     .build();
 

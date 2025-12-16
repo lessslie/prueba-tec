@@ -8,11 +8,14 @@ import {
   Patch,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { PublicationsService } from './publications.service';
 import { CreatePublicationDto } from './dto/create-publication.dto';
 import { PublicationWithDescriptionDto } from './dto/publication-with-description.dto';
+import { UpdatePublicationDto } from './dto/update-publication.dto';
+import { ListPublicationsQueryDto } from './dto/list-publications-query.dto';
 
 @ApiTags('publications')
 @Controller('publications')
@@ -21,6 +24,25 @@ export class PublicationsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new publication' })
+  @ApiBody({
+    description: 'Publication payload',
+    type: CreatePublicationDto,
+    examples: {
+      default: {
+        summary: 'Example publication',
+        value: {
+          meliItemId: 'MLA123456789',
+          title: 'Producto de prueba',
+          price: 12345.67,
+          status: 'active',
+          availableQuantity: 10,
+          soldQuantity: 3,
+          categoryId: 'MLA1051',
+          description: 'Descripción de prueba del producto.',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'Publication created successfully',
@@ -40,8 +62,10 @@ export class PublicationsController {
     description: 'List of all publications',
     type: [PublicationWithDescriptionDto],
   })
-  async findAll(): Promise<PublicationWithDescriptionDto[]> {
-    return this.publicationsService.findAll();
+  async findAll(
+    @Query() query: ListPublicationsQueryDto,
+  ): Promise<PublicationWithDescriptionDto[]> {
+    return this.publicationsService.findAll(query);
   }
 
   @Get(':id')
@@ -83,7 +107,7 @@ export class PublicationsController {
   @ApiResponse({ status: 404, description: 'Publication not found' })
   async update(
     @Param('id') id: string,
-    @Body() updateDto: Partial<CreatePublicationDto>,
+    @Body() updateDto: UpdatePublicationDto,
   ): Promise<PublicationWithDescriptionDto> {
     return this.publicationsService.update(id, updateDto);
   }
@@ -98,4 +122,3 @@ export class PublicationsController {
     return this.publicationsService.remove(id);
   }
 }
-
