@@ -1,6 +1,6 @@
 import styles from "./page.module.css";
 import { API_BASE } from "../lib/config";
-import type { PublicationDto } from "../lib/types";
+import type { MeliStatusResponse, PublicationDto } from "../lib/types";
 import { AnalyzeButton } from "../components/analyze-button";
 import { CreateOrImport } from "../components/create-or-import";
 import { PublicationCard } from "../components/publication-card";
@@ -13,12 +13,25 @@ async function fetchPublications(): Promise<PublicationDto[]> {
   return res.json();
 }
 
+async function fetchMeliStatus(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/meli/status`, { cache: "no-store" });
+    if (!res.ok) return false;
+    const data = (await res.json()) as MeliStatusResponse;
+    return data.connected;
+  } catch {
+    return false;
+  }
+}
+
 export default async function Home() {
   let publications: PublicationDto[] = [];
   let error: string | null = null;
+  let meliConnected = false;
 
   try {
     publications = await fetchPublications();
+    meliConnected = await fetchMeliStatus();
   } catch (err: any) {
     error = err?.message || "Error cargando publicaciones";
   }
@@ -33,9 +46,13 @@ export default async function Home() {
             Importa desde ML, guarda en Postgres y genera recomendaciones con IA. Selecciona
             una publicación y corre el análisis.
           </p>
-          <a className={styles.linkButton} href={`${API_BASE}/meli/auth`}>
-            Conectar Mercado Libre
-          </a>
+          {meliConnected ? (
+            <span className={styles.linkButton}>Cuenta Mercado Libre conectada</span>
+          ) : (
+            <a className={styles.linkButton} href={`${API_BASE}/meli/auth`}>
+              Conectar Mercado Libre
+            </a>
+          )}
         </div>
         <div className={styles.badge}>
           Backend: {API_BASE.replace("http://", "").replace("https://", "")}

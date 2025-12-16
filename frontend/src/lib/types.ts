@@ -38,3 +38,7 @@ export interface CreatePublicationInput {
 }
 
 export interface UpdatePublicationInput extends Partial<CreatePublicationInput> {}
+
+export interface MeliStatusResponse {
+  connected: boolean;
+}

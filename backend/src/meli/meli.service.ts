@@ -279,6 +279,20 @@ export class MeliService {
     }
   }
 
+  async hasValidToken(): Promise<boolean> {
+    const envToken = this.configService.get<string>('MELI_ACCESS_TOKEN');
+    if (envToken) return true;
+
+    try {
+      const latestToken = await this.getLatestToken();
+      const expiresSoon =
+        latestToken.expiresAt.getTime() - this.tokenExpiryBufferMs <= Date.now();
+      return !expiresSoon;
+    } catch {
+      return false;
+    }
+  }
+
   private getClientId(): string {
     const value = this.configService.get<string>('MELI_CLIENT_ID');
     if (!value) throw new InternalServerErrorException('MELI_CLIENT_ID is not configured');
