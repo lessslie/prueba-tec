@@ -1,0 +1,188 @@
+﻿{
+  "info": {
+    "name": "RataLibre Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Publications",
+      "item": [
+        {
+          "name": "Create publication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meliItemId\": \"MLA123456789\",\n  \"title\": \"Producto de prueba\",\n  \"price\": 12345.67,\n  \"status\": \"active\",\n  \"availableQuantity\": 10,\n  \"soldQuantity\": 3,\n  \"categoryId\": \"MLA1051\",\n  \"description\": \"Descripcion de prueba\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/publications",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3001",
+              "path": [
+                "publications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List publications (paginated)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3001/publications?limit=20&offset=0",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3001",
+              "path": [
+                "publications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get publication by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3001/publications/{{publicationId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3001",
+              "path": [
+                "publications",
+                "{{publicationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get publication by Meli item id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3001/publications/meli/{{meliItemId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3001",
+              "path": [
+                "publications",
+                "meli",
+                "{{meliItemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update publication (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Nuevo titulo\",\n  \"price\": 9999.99,\n  \"description\": \"Descripcion actualizada\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/publications/{{publicationId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3001",
+              "path": [
+                "publications",
+                "{{publicationId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete publication",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3001/publications/{{publicationId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3001",
+              "path": [
+                "publications",
+                "{{publicationId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Meli",
+      "item": [
+        {
+          "name": "Redirect to OAuth",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3001/meli/auth"
+          }
+        },
+        {
+          "name": "OAuth callback (manual test)",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3001/meli/callback?code={{code}}"
+          }
+        },
+        {
+          "name": "Import item by id/product",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3001/meli/import/{{itemId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analysis",
+      "item": [
+        {
+          "name": "Analyze publication",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3001/analysis/publication/{{publicationId}}?force=false"
+          }
+        }
+      ]
+    }
+  ]
+}
