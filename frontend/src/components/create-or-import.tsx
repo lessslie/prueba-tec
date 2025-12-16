@@ -23,14 +23,20 @@ export function CreateOrImport() {
   const [importId, setImportId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const onChange = (field: keyof CreatePublicationInput, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCreate = async () => {
+    if (!form.meliItemId.trim() || !form.title.trim()) {
+      setError('Completa los campos obligatorios (Item ID y Título).');
+      return;
+    }
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       await createPublication({
         ...form,
@@ -39,9 +45,11 @@ export function CreateOrImport() {
         soldQuantity: Number(form.soldQuantity),
       });
       setForm(initialForm);
+      setSuccess('Publicación creada correctamente.');
       router.refresh();
     } catch (err: any) {
-      setError(err?.message || 'No se pudo crear la publicación');
+      const msg = err?.message || 'No se pudo crear la publicación';
+      setError(msg.includes('Failed to fetch') ? 'No se pudo conectar al servidor.' : msg);
     } finally {
       setLoading(false);
     }
@@ -54,9 +62,11 @@ export function CreateOrImport() {
     }
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       await importFromMeli(importId.trim());
       setImportId('');
+      setSuccess('Importación en progreso: la publicación fue traída desde Mercado Libre.');
       router.refresh();
     } catch (err: any) {
       setError(err?.message || 'No se pudo importar desde Mercado Libre');
@@ -168,6 +178,7 @@ export function CreateOrImport() {
       </div>
 
       {error && <p className={styles.errorText}>{error}</p>}
+      {success && <p className={styles.successText}>{success}</p>}
     </div>
   );
 }

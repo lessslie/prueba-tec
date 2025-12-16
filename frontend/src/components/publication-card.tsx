@@ -16,6 +16,7 @@ export function PublicationCard({ publication }: Props) {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [form, setForm] = useState<UpdatePublicationInput>({
     title: publication.title,
@@ -52,8 +53,10 @@ export function PublicationCard({ publication }: Props) {
   };
 
   const handleDelete = async () => {
-    const confirm = window.confirm('¿Eliminar esta publicación?');
-    if (!confirm) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -164,19 +167,10 @@ export function PublicationCard({ publication }: Props) {
       )}
 
       <div className={styles.cardActions}>
-        <button
-          className={styles.secondaryButton}
-          type="button"
-          onClick={() => setEditing((prev) => !prev)}
-        >
+        <button className={styles.secondaryButton} type="button" onClick={() => setEditing((prev) => !prev)}>
           {editing ? 'Cancelar' : 'Editar'}
         </button>
-        <button
-          className={styles.dangerButton}
-          type="button"
-          onClick={handleDelete}
-          disabled={loading}
-        >
+        <button className={styles.dangerButton} type="button" onClick={handleDelete} disabled={loading}>
           Eliminar
         </button>
       </div>
@@ -195,6 +189,26 @@ export function PublicationCard({ publication }: Props) {
       )}
 
       {error && <p className={styles.errorText}>{error}</p>}
+
+      {confirmDelete && (
+        <div className={styles.modalBackdrop}>
+          <div className={styles.modalContent}>
+            <p>¿Eliminar esta publicación?</p>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.secondaryButton}
+                onClick={() => setConfirmDelete(false)}
+                type="button"
+              >
+                Cancelar
+              </button>
+              <button className={styles.dangerButton} onClick={handleDelete} type="button" disabled={loading}>
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </article>
   );
 }
