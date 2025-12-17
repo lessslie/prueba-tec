@@ -54,6 +54,15 @@
   font-size: 14px;
 }
 
+.badgeSmall {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #c7d2fe;
+  background: rgba(129, 140, 248, 0.12);
+  font-size: 12px;
+}
+
 .linkButton {
   align-self: flex-start;
   margin-top: 10px;
@@ -135,6 +144,15 @@
 .importRow {
   display: flex;
   gap: 10px;
+}
+
+.select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #e5e7eb;
+  padding: 10px;
 }
 
 .secondaryButton {
