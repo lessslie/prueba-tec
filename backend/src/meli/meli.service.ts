@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +20,7 @@ import { PublicationsService } from '../publications/publications.service';
 export class MeliService {
   private readonly apiBase = 'https://api.mercadolibre.com';
   private readonly tokenExpiryBufferMs = 60_000; // refresh 1 min before expiry
+  private readonly logger = new Logger(MeliService.name);
 
   constructor(
     private readonly httpService: HttpService,
@@ -149,6 +151,10 @@ export class MeliService {
       return data;
     } catch (error: any) {
       const statusCode = error?.response?.status || 500;
+      this.logger.error(
+        `fetchItem error status=${statusCode} msg=${error?.response?.data?.message || error?.message}`,
+        error?.response?.data ? JSON.stringify(error.response.data) : undefined,
+      );
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -203,6 +209,10 @@ export class MeliService {
       const { data } = await firstValueFrom(response$);
       return data.items || [];
     } catch (error: any) {
+      this.logger.error(
+        `fetchItemsFromProduct error status=${error?.response?.status} msg=${error?.response?.data?.message || error?.message}`,
+        error?.response?.data ? JSON.stringify(error.response.data) : undefined,
+      );
       const statusCode = error?.response?.status;
       if (statusCode === 401 || statusCode === 403) {
         throw new UnauthorizedException(
