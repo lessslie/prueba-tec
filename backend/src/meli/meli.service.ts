@@ -7,6 +7,8 @@ import {
   BadRequestException,
   Logger,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -28,6 +30,7 @@ export class MeliService {
     private readonly configService: ConfigService,
     @InjectRepository(MeliToken)
     private readonly meliTokenRepository: Repository<MeliToken>,
+    @Inject(forwardRef(() => PublicationsService))
     private readonly publicationsService: PublicationsService,
   ) {}
 
@@ -156,6 +159,7 @@ export class MeliService {
 
       return this.publicationsService.upsertFromMeli({
         meliItemId: item.id,
+        permalink: item.permalink ?? null,
         title: item.title,
         price: item.price,
         status: item.status,
@@ -193,6 +197,171 @@ export class MeliService {
     throw new BadRequestException(
       'No se pudo extraer el itemId/productId de Mercado Libre. Usa un ID (MLA123...) o pega la URL completa.',
     );
+  }
+
+  async createItemFromApp(payload: {
+    title: string;
+    price: number;
+    availableQuantity: number;
+    categoryId: string;
+    description?: string;
+    pictures?: string[];
+  }) {
+    const accessToken = await this.ensureAccessToken();
+
+    // Validar que la categoría sea hoja
+    const categoryDetail = await this.getCategoryDetail(payload.categoryId);
+    if (categoryDetail?.children_categories?.length) {
+      throw new BadRequestException('La categoría seleccionada no es hoja. Elige una subcategoría.');
+    }
+
+    const baseAttributes = [
+      { id: 'BRAND', value_name: 'Genérico' },
+      { id: 'MODEL', value_name: 'Modelo genérico' },
+    ];
+
+    // Atributos mínimos obligatorios para celulares (MLA1055) que causaban error 400
+    if (payload.categoryId === 'MLA1055') {
+      baseAttributes.push(
+        { id: 'COLOR', value_name: 'Negro' },
+        { id: 'IS_DUAL_SIM', value_name: 'Sí' },
+        { id: 'CARRIER', value_name: 'Liberado' },
+      );
+    }
+
+    const body = {
+      title: payload.title,
+      category_id: payload.categoryId,
+      price: payload.price,
+      currency_id: 'ARS',
+      available_quantity: payload.availableQuantity,
+      buying_mode: 'buy_it_now',
+      condition: 'new',
+      listing_type_id: 'gold_special',
+      shipping: { mode: 'not_specified' },
+      attributes: baseAttributes,
+      description: payload.description ? { plain_text: payload.description } : undefined,
+      pictures:
+        payload.pictures && payload.pictures.length > 0
+          ? payload.pictures.map((src) => ({ source: src }))
+          : [
+              {
+                source:
+                  'https://http2.mlstatic.com/storage/developers-site-cms-admin/openapi/319968618063-test_image.jpg',
+              },
+            ],
+    };
+
+    try {
+      const response$ = this.httpService.post<{ id: string }>(`${this.apiBase}/items`, body, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const { data } = await firstValueFrom(response$);
+      const createdItem = await this.fetchItem(data.id, accessToken);
+      const description = await this.fetchItemDescription(data.id, accessToken);
+
+      return this.publicationsService.upsertFromMeli({
+        meliItemId: createdItem.id,
+        permalink: createdItem.permalink ?? null,
+        title: createdItem.title,
+        price: createdItem.price,
+        status: createdItem.status,
+        availableQuantity: createdItem.available_quantity,
+        soldQuantity: createdItem.sold_quantity,
+        categoryId: createdItem.category_id,
+        description: description?.plain_text || description?.text || payload.description,
+        metadata: { rawItem: createdItem, rawDescription: description },
+      });
+    } catch (error: any) {
+      this.logger.error(
+        `createItemFromApp error status=${error?.response?.status} msg=${error?.response?.data?.message || error?.message}`,
+        error?.response?.data ? JSON.stringify(error.response.data) : undefined,
+      );
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        throw new UnauthorizedException(
+          'Token de Mercado Libre invalido o expirado. Reautentica via /meli/auth.',
+        );
+      }
+      throw new InternalServerErrorException(
+        `No se pudo crear la publicacion en Mercado Libre: ${error?.response?.data?.message || error?.message || 'Error desconocido'}`,
+      );
+    }
+  }
+
+  async getCategories(parentId?: string) {
+    try {
+      if (parentId) {
+        const detail = await this.getCategoryDetail(parentId);
+        return detail?.children_categories || [];
+      }
+      const response$ = this.httpService.get<{ id: string; name: string }[]>(
+        `${this.apiBase}/sites/MLA/categories`,
+      );
+      const { data } = await firstValueFrom(response$);
+      return data;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const isPolicy =
+        status === 403 &&
+        (error?.response?.data?.blocked_by === 'PolicyAgent' ||
+          error?.response?.data?.code === 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES');
+
+      const fallbackRoots = [
+        { id: 'MLA5725', name: 'Accesorios para Vehículos' },
+        { id: 'MLA1512', name: 'Agro' },
+        { id: 'MLA1403', name: 'Alimentos y Bebidas' },
+        { id: 'MLA1071', name: 'Animales y Mascotas' },
+        { id: 'MLA1367', name: 'Antigüedades y Colecciones' },
+        { id: 'MLA1368', name: 'Arte, Librería y Mercería' },
+        { id: 'MLA1743', name: 'Autos, Motos y Otros' },
+        { id: 'MLA1384', name: 'Bebés' },
+        { id: 'MLA1246', name: 'Belleza y Cuidado Personal' },
+        { id: 'MLA1039', name: 'Cámaras y Accesorios' },
+        { id: 'MLA1051', name: 'Celulares y Teléfonos' },
+        { id: 'MLA1648', name: 'Computación' },
+        { id: 'MLA1144', name: 'Consolas y Videojuegos' },
+        { id: 'MLA1500', name: 'Construcción' },
+        { id: 'MLA1276', name: 'Deportes y Fitness' },
+        { id: 'MLA5726', name: 'Electrodomésticos y Aires Ac.' },
+        { id: 'MLA1000', name: 'Electrónica, Audio y Video' },
+        { id: 'MLA2547', name: 'Entradas para Eventos' },
+        { id: 'MLA407134', name: 'Herramientas' },
+        { id: 'MLA1574', name: 'Hogar, Muebles y Jardín' },
+        { id: 'MLA1499', name: 'Industrias y Oficinas' },
+        { id: 'MLA1459', name: 'Inmuebles' },
+        { id: 'MLA1182', name: 'Instrumentos Musicales' },
+        { id: 'MLA3937', name: 'Joyas y Relojes' },
+        { id: 'MLA1132', name: 'Juegos y Juguetes' },
+        { id: 'MLA3025', name: 'Libros, Revistas y Comics' },
+        { id: 'MLA1168', name: 'Música, Películas y Series' },
+        { id: 'MLA1430', name: 'Ropa y Accesorios' },
+        { id: 'MLA409431', name: 'Salud y Equipamiento Médico' },
+        { id: 'MLA1540', name: 'Servicios' },
+        { id: 'MLA9304', name: 'Souvenirs, Cotillón y Fiestas' },
+        { id: 'MLA1953', name: 'Otras categorías' },
+      ];
+
+      if (isPolicy) {
+        if (parentId) {
+          throw new BadRequestException(
+            'Mercado Libre bloquea las subcategorías desde esta red. Ingresá manualmente un ID de categoría hoja (ej. MLA1055).',
+          );
+        }
+        // Fallback a raíz estática para no romper el frontend
+        return fallbackRoots;
+      }
+
+      throw new InternalServerErrorException('No se pudieron obtener las categorías');
+    }
+  }
+
+  private async getCategoryDetail(categoryId: string) {
+    const response$ = this.httpService.get<{ id: string; name: string; children_categories: any[] }>(
+      `${this.apiBase}/categories/${categoryId}`,
+    );
+    const { data } = await firstValueFrom(response$);
+    return data;
   }
 
   private async fetchItem(itemId: string, accessToken: string): Promise<MeliItem> {

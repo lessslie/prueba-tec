@@ -1,4 +1,4 @@
-# RataLibre – Prueba Técnica
+# RataLibre · Prueba Técnica
 
 Backend Nest + Frontend Next para importar publicaciones de Mercado Libre, persistirlas en Postgres y analizarlas con OpenAI.
 
@@ -24,11 +24,16 @@ Backend Nest + Frontend Next para importar publicaciones de Mercado Libre, persi
 2) Frontend: `cd frontend && npm install && npm run dev`
 3) Abrir `http://localhost:3000` y usar el botón “Conectar Mercado Libre” (OAuth).
 
-## Flujo
-1) Conectar Mercado Libre (OAuth). El token se guarda solo en backend.
-2) Importar publicación por item/product ID o crearla manualmente.
-3) Listar/editar/eliminar publicaciones.
-4) Botón “Analizar publicación” → LLM devuelve recomendaciones (título, descripción, oportunidades, riesgos).
+## Flujo principal
+1) **Conectar Mercado Libre**: OAuth desde el botón. Tokens se guardan solo en backend. Estado: `GET /meli/status`.
+2) **Crear o importar**:
+   - Manual: el **Item ID se deja vacío** (ML lo genera). Elegir categoría en cascada; si ML bloquea subcategorías (403 PolicyAgent), usar el campo de **ID manual (hoja)**.
+   - Celulares (MLA1055) ya incluyen atributos mínimos (COLOR, IS_DUAL_SIM, CARRIER + BRAND/MODEL). Si otra categoría pide más atributos, el error 400 indica cuáles y se deben enviar.
+   - Imágenes: URLs públicas directas (jpg/png). ML puede tardar unos minutos en procesarlas.
+   - ML puede dejar la publicación en `paused` para cuentas nuevas/test; activarla desde ML.
+   - Importar: pegar item/product ID o URL completa. Si 401/403, reconectar ML.
+3) **Mis publicaciones ML**: botón “Cargar mis publicaciones” usa `/meli/me` y `/meli/my-items`; se pueden importar desde el selector.
+4) **Analizar publicación**: usa OpenAI y guarda el análisis.
 5) Swagger en backend: `/api/docs`.
 
 ## Notas

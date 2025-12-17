@@ -16,6 +16,9 @@ export class Publication {
   @Column({ name: 'meli_item_id', unique: true })
   meliItemId!: string;
 
+  @Column({ name: 'permalink', type: 'varchar', nullable: true })
+  permalink!: string | null;
+
   @Column()
   title!: string;
 
@@ -47,5 +50,4 @@ export class Publication {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }
-
 

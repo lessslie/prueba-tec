@@ -6,11 +6,11 @@ export interface MeliItem {
   available_quantity: number;
   sold_quantity: number;
   category_id: string;
+  permalink?: string;
 }
 
 export interface MeliItemDescription {
   plain_text?: string;
   text?: string;
 }
-
 
