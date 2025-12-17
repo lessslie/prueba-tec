@@ -37,6 +37,13 @@
   max-width: 720px;
 }
 
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .badge {
   align-self: flex-start;
   padding: 10px 14px;
