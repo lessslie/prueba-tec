@@ -22,6 +22,7 @@ export function CreateOrImport() {
   const [form, setForm] = useState<CreatePublicationInput>(initialForm);
   const [importId, setImportId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [slowImport, setSlowImport] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -61,8 +62,10 @@ export function CreateOrImport() {
       return;
     }
     setLoading(true);
+    setSlowImport(false);
     setError(null);
     setSuccess(null);
+    const timer = setTimeout(() => setSlowImport(true), 6000);
     try {
       await importFromMeli(importId.trim());
       setImportId('');
@@ -74,13 +77,25 @@ export function CreateOrImport() {
         rawMsg.includes('401') ||
         rawMsg.includes('Token de Mercado Libre invalido') ||
         rawMsg.toLowerCase().includes('expired');
+      const blocked =
+        rawMsg.includes('PolicyAgent') ||
+        rawMsg.toLowerCase().includes('bloquea este item');
+      const forbidden =
+        rawMsg.toLowerCase().includes('access_denied') ||
+        rawMsg.toLowerCase().includes('no permite acceder a este item');
       setError(
         needsAuth
-          ? 'Token expirado o invalido: hacé clic en "Conectar Mercado Libre" y volvé a intentar.'
-          : rawMsg,
+          ? 'Token expirado o inválido: hacé clic en "Conectar Mercado Libre" y volvé a intentar.'
+          : blocked
+            ? 'Mercado Libre bloquea este item (PolicyAgent). Probá con otro ID o un item público.'
+            : forbidden
+              ? 'Mercado Libre no permite acceder a este item (403). Probá con otro ID o revisá permisos.'
+              : rawMsg,
       );
     } finally {
+      clearTimeout(timer);
       setLoading(false);
+      setSlowImport(false);
     }
   };
 
@@ -187,6 +202,11 @@ export function CreateOrImport() {
       </div>
 
       {error && <p className={styles.errorText}>{error}</p>}
+      {slowImport && !error && (
+        <p className={styles.errorText}>
+          La importación está tardando: puede que Mercado Libre bloquee el item o la API responda lento.
+        </p>
+      )}
       {success && <p className={styles.successText}>{success}</p>}
     </div>
   );
