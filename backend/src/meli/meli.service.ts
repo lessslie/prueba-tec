@@ -155,6 +155,14 @@ export class MeliService {
         `fetchItem error status=${statusCode} msg=${error?.response?.data?.message || error?.message}`,
         error?.response?.data ? JSON.stringify(error.response.data) : undefined,
       );
+
+      // If token is forbidden/unauthorized, fallback to public GET (doesn't require auth for public items)
+      if (statusCode === 401 || statusCode === 403) {
+        this.logger.warn(`Falling back to public fetch for item ${itemId}`);
+        const publicItem = await this.fetchItemPublic(itemId);
+        if (publicItem) return publicItem;
+      }
+
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -191,7 +199,16 @@ export class MeliService {
       const { data } = await firstValueFrom(response$);
       return data;
     } catch {
-      return null; // some items might not have description endpoint
+      // fallback without token (public)
+      try {
+        const response$ = this.httpService.get<MeliItemDescription>(
+          `${this.apiBase}/items/${itemId}/description`,
+        );
+        const { data } = await firstValueFrom(response$);
+        return data;
+      } catch {
+        return null; // some items might not have description endpoint
+      }
     }
   }
 
@@ -213,6 +230,18 @@ export class MeliService {
         `fetchItemsFromProduct error status=${error?.response?.status} msg=${error?.response?.data?.message || error?.message}`,
         error?.response?.data ? JSON.stringify(error.response.data) : undefined,
       );
+
+      // fallback to public call (products endpoint suele ser pÃºblico)
+      try {
+        const response$ = this.httpService.get<{ items: MeliItem[] }>(
+          `${this.apiBase}/products/${productId}`,
+        );
+        const { data } = await firstValueFrom(response$);
+        return data.items || [];
+      } catch {
+        // ignore and fallthrough to error handling below
+      }
+
       const statusCode = error?.response?.status;
       if (statusCode === 401 || statusCode === 403) {
         throw new UnauthorizedException(
@@ -222,6 +251,20 @@ export class MeliService {
       throw new InternalServerErrorException(
         `Error fetching items from product: ${error?.response?.data?.message || error?.message}`,
       );
+    }
+  }
+
+  private async fetchItemPublic(itemId: string): Promise<MeliItem | null> {
+    try {
+      const response$ = this.httpService.get<MeliItem>(`${this.apiBase}/items/${itemId}`);
+      const { data } = await firstValueFrom(response$);
+      return data;
+    } catch (error: any) {
+      const statusCode = error?.response?.status;
+      if (statusCode === 404) {
+        throw new NotFoundException(`Item ${itemId} not found in Mercado Libre`);
+      }
+      return null;
     }
   }
 
