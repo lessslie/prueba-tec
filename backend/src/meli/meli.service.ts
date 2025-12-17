@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -29,6 +30,58 @@ export class MeliService {
     private readonly meliTokenRepository: Repository<MeliToken>,
     private readonly publicationsService: PublicationsService,
   ) {}
+
+  async getProfile() {
+    const latestToken = await this.getLatestToken();
+    const accessToken = await this.ensureAccessToken();
+
+    try {
+      const response$ = this.httpService.get<{ id: number; nickname?: string; status?: any }>(
+        `${this.apiBase}/users/me`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const { data } = await firstValueFrom(response$);
+      return {
+        id: data.id,
+        nickname: data.nickname,
+        status: data?.status?.site_status ?? null,
+        expiresAt: latestToken.expiresAt,
+      };
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        throw new UnauthorizedException('Token de Mercado Libre invalido o expirado. Reautentica via /meli/auth.');
+      }
+      throw new InternalServerErrorException('No se pudo obtener el perfil de Mercado Libre');
+    }
+  }
+
+  async listOwnItems(params?: { limit?: number; offset?: number; includeFilters?: boolean }) {
+    const accessToken = await this.ensureAccessToken();
+    const profile = await this.getProfile();
+
+    const query = new URLSearchParams();
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.offset) query.append('offset', params.offset.toString());
+    if (params?.includeFilters) query.append('include_filters', 'true');
+
+    const url = `${this.apiBase}/users/${profile.id}/items/search${query.toString() ? `?${query.toString()}` : ''}`;
+
+    try {
+      const response$ = this.httpService.get<{
+        results: string[];
+        paging?: { total: number; limit: number; offset: number };
+      }>(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+      const { data } = await firstValueFrom(response$);
+      return data;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        throw new UnauthorizedException('Token de Mercado Libre invalido o expirado. Reautentica via /meli/auth.');
+      }
+      throw new InternalServerErrorException('No se pudo obtener el listado de items del vendedor.');
+    }
+  }
 
   getAuthUrl(state?: string): string {
     const clientId = this.getClientId();
@@ -156,11 +209,28 @@ export class MeliService {
         error?.response?.data ? JSON.stringify(error.response.data) : undefined,
       );
 
+      const blockedByPolicy =
+        statusCode === 403 &&
+        (error?.response?.data?.blocked_by === 'PolicyAgent' ||
+          error?.response?.data?.code === 'PA_UNAUTHORIZED_RESULT_FROM_POLICIES');
+
+      if (blockedByPolicy) {
+        throw new ForbiddenException(
+          'Mercado Libre bloquea este item por políticas (PolicyAgent). Prueba con otro ID.',
+        );
+      }
+
       // If token is forbidden/unauthorized, fallback to public GET (doesn't require auth for public items)
       if (statusCode === 401 || statusCode === 403) {
         this.logger.warn(`Falling back to public fetch for item ${itemId}`);
         const publicItem = await this.fetchItemPublic(itemId);
         if (publicItem) return publicItem;
+
+        if (statusCode === 403) {
+          throw new ForbiddenException(
+            `Mercado Libre no permite acceder a este item (403 access_denied). Prueba con otro ID o revisa permisos de la app.`,
+          );
+        }
       }
 
       const errorMessage =

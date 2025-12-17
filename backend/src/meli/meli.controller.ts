@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Query, Res } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { MeliService } from './meli.service';
 import { PublicationWithDescriptionDto } from '../publications/dto/publication-with-description.dto';
@@ -10,6 +10,34 @@ import { ImportItemParamsDto } from './dto/import-item.params';
 @Controller('meli')
 export class MeliController {
   constructor(private readonly meliService: MeliService) {}
+
+  @Get('me')
+  @ApiOperation({ summary: 'Obtener perfil del usuario de Mercado Libre autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil básico del usuario conectado' })
+  async me() {
+    return this.meliService.getProfile();
+  }
+
+  @Get('my-items')
+  @ApiOperation({ summary: 'Listar items del vendedor autenticado' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Cantidad a devolver (por defecto 50)' })
+  @ApiQuery({ name: 'offset', required: false, description: 'Offset para paginado (por defecto 0)' })
+  @ApiQuery({
+    name: 'includeFilters',
+    required: false,
+    description: 'Incluye filtros disponibles (puede hacer la respuesta más pesada)',
+  })
+  async myItems(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('includeFilters') includeFilters?: string,
+  ) {
+    return this.meliService.listOwnItems({
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+      includeFilters: includeFilters?.toString().toLowerCase() === 'true',
+    });
+  }
 
   @Get('auth')
   @ApiOperation({ summary: 'Redirect to Mercado Libre OAuth' })
