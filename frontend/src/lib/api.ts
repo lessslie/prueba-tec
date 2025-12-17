@@ -57,7 +57,9 @@ export async function deletePublication(id: string): Promise<void> {
 }
 
 export async function importFromMeli(itemId: string): Promise<PublicationDto> {
-  const res = await fetch(`${API_BASE}/meli/import/${itemId}`, { method: 'GET' });
+  const res = await fetch(`${API_BASE}/meli/import/${encodeURIComponent(itemId)}`, {
+    method: 'GET',
+  });
   if (!res.ok) {
     throw await buildError(res);
   }

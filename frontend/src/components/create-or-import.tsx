@@ -69,7 +69,16 @@ export function CreateOrImport() {
       setSuccess('Importación en progreso: la publicación fue traída desde Mercado Libre.');
       router.refresh();
     } catch (err: any) {
-      setError(err?.message || 'No se pudo importar desde Mercado Libre');
+      const rawMsg = err?.message || 'No se pudo importar desde Mercado Libre';
+      const needsAuth =
+        rawMsg.includes('401') ||
+        rawMsg.includes('Token de Mercado Libre invalido') ||
+        rawMsg.toLowerCase().includes('expired');
+      setError(
+        needsAuth
+          ? 'Token expirado o invalido: hacé clic en "Conectar Mercado Libre" y volvé a intentar.'
+          : rawMsg,
+      );
     } finally {
       setLoading(false);
     }

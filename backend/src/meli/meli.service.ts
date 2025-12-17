@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -61,24 +62,25 @@ export class MeliService {
 
   async importItem(itemId: string) {
     try {
+      const parsedId = this.extractItemOrProductId(itemId);
       const accessToken = await this.ensureAccessToken();
 
       // Try first as item_id
-      let actualItemId = itemId;
+      let actualItemId = parsedId;
       let item: MeliItem;
 
       try {
-        item = await this.fetchItem(itemId, accessToken);
+        item = await this.fetchItem(parsedId, accessToken);
       } catch (error: any) {
         if (error instanceof NotFoundException) {
           try {
-            const items = await this.fetchItemsFromProduct(itemId, accessToken);
+            const items = await this.fetchItemsFromProduct(parsedId, accessToken);
             if (items && items.length > 0) {
               actualItemId = items[0].id;
               item = await this.fetchItem(actualItemId, accessToken);
             } else {
               throw new NotFoundException(
-                `No se encontro el item ni producto con ID ${itemId}. Verifica que el ID sea correcto.`,
+                `No se encontro el item ni producto con ID ${parsedId}. Verifica que el ID sea correcto.`,
               );
             }
           } catch (productError: any) {
@@ -86,7 +88,7 @@ export class MeliService {
               throw productError;
             }
             throw new NotFoundException(
-              `No se encontro el item ni producto con ID ${itemId}. Verifica que el ID sea correcto.`,
+              `No se encontro el item ni producto con ID ${parsedId}. Verifica que el ID sea correcto.`,
             );
           }
         } else {
@@ -118,6 +120,26 @@ export class MeliService {
     }
   }
 
+  private extractItemOrProductId(raw: string): string {
+    if (!raw || !raw.trim()) {
+      throw new BadRequestException('Provea un itemId, productId o URL de Mercado Libre');
+    }
+
+    const decoded = decodeURIComponent(raw.trim());
+
+    // If a full URL is provided, search on it; otherwise search on the raw string
+    const target = decoded.startsWith('http') ? decoded : ` ${decoded} `;
+
+    const match = target.match(/(ML[A-Z]{0,2}-?\d{5,})/i);
+    if (match && match[1]) {
+      return match[1].replace('-', '').toUpperCase();
+    }
+
+    throw new BadRequestException(
+      'No se pudo extraer el itemId/productId de Mercado Libre. Usa un ID (MLA123...) o pega la URL completa.',
+    );
+  }
+
   private async fetchItem(itemId: string, accessToken: string): Promise<MeliItem> {
     try {
       const response$ = this.httpService.get<MeliItem>(`${this.apiBase}/items/${itemId}`, {
@@ -132,6 +154,12 @@ export class MeliService {
         error?.response?.data?.error ||
         error?.message ||
         'Error fetching item from Mercado Libre';
+
+      if (statusCode === 401 || statusCode === 403) {
+        throw new UnauthorizedException(
+          'Token de Mercado Libre invalido o expirado. Reautentica via /meli/auth.',
+        );
+      }
 
       if (statusCode === 404) {
         throw new NotFoundException(`Item ${itemId} not found in Mercado Libre`);
@@ -175,6 +203,12 @@ export class MeliService {
       const { data } = await firstValueFrom(response$);
       return data.items || [];
     } catch (error: any) {
+      const statusCode = error?.response?.status;
+      if (statusCode === 401 || statusCode === 403) {
+        throw new UnauthorizedException(
+          'Token de Mercado Libre invalido o expirado. Reautentica via /meli/auth.',
+        );
+      }
       throw new InternalServerErrorException(
         `Error fetching items from product: ${error?.response?.data?.message || error?.message}`,
       );
@@ -211,6 +245,7 @@ export class MeliService {
 
   private async getLatestToken(): Promise<MeliToken> {
     const token = await this.meliTokenRepository.findOne({
+      where: {},
       order: { createdAt: 'DESC' },
     });
 
