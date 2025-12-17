@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MeliService } from './meli.service';
@@ -10,12 +10,11 @@ import { PublicationsModule } from '../publications/publications.module';
   imports: [
     HttpModule,
     TypeOrmModule.forFeature([MeliToken]),
-    PublicationsModule,
+    forwardRef(() => PublicationsModule),
   ],
   controllers: [MeliController],
   providers: [MeliService],
   exports: [MeliService],
 })
 export class MeliModule {}
-
 

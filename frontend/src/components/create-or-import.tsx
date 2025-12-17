@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPublication, importFromMeli } from '../lib/api';
 import { API_BASE } from '../lib/config';
@@ -27,16 +27,62 @@ export function CreateOrImport() {
   const [loadingMyItems, setLoadingMyItems] = useState(false);
   const [myItems, setMyItems] = useState<string[]>([]);
   const [profileLabel, setProfileLabel] = useState<string | null>(null);
+  const [picturesInput, setPicturesInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [categoryLevels, setCategoryLevels] = useState<{ id: string; name: string }[][]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
   const onChange = (field: keyof CreatePublicationInput, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const loadCategories = async (parentId: string | null, level: number) => {
+    setCategoryLoading(true);
+    try {
+      const url = parentId ? `${API_BASE}/meli/categories?parent=${parentId}` : `${API_BASE}/meli/categories`;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('No se pudieron cargar las categorías');
+      const data = await res.json();
+      setCategoryLevels((prev) => {
+        const next = prev.slice(0, level);
+        next[level] = Array.isArray(data) ? data : [];
+        return next;
+      });
+      setSelectedCategories((prev) => prev.slice(0, level));
+      if ((!data || data.length === 0) && parentId) {
+        setForm((prev) => ({ ...prev, categoryId: parentId }));
+      }
+    } catch (err: any) {
+      setError(err?.message || 'No se pudieron cargar las categorías');
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  const handleSelectCategory = (level: number, value: string) => {
+    setForm((prev) => ({ ...prev, categoryId: '' }));
+    setSelectedCategories((prev) => {
+      const next = prev.slice(0, level);
+      if (value) next[level] = value;
+      return next;
+    });
+    if (!value) {
+      setCategoryLevels((prev) => prev.slice(0, level));
+      return;
+    }
+    loadCategories(value, level + 1);
+  };
+
+  useEffect(() => {
+    loadCategories(null, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCreate = async () => {
-    if (!form.meliItemId.trim() || !form.title.trim()) {
-      setError('Completa los campos obligatorios (Item ID y Título).');
+    if (!form.title.trim()) {
+      setError('Completa el título para publicar en Mercado Libre.');
       return;
     }
     setLoading(true);
@@ -48,6 +94,10 @@ export function CreateOrImport() {
         price: Number(form.price),
         availableQuantity: Number(form.availableQuantity),
         soldQuantity: Number(form.soldQuantity),
+        pictures: picturesInput
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean),
       });
       setForm(initialForm);
       setSuccess('Publicación creada correctamente.');
@@ -143,7 +193,7 @@ export function CreateOrImport() {
             <input
               value={form.meliItemId}
               onChange={(e) => onChange('meliItemId', e.target.value)}
-              placeholder="MLA123..."
+              placeholder="Esto lo genera ML"
             />
           </label>
           <label>
@@ -191,10 +241,35 @@ export function CreateOrImport() {
           </label>
           <label>
             <span>Categoría</span>
+            <div className={styles.categoryStack}>
+              {categoryLevels.length === 0 && <p className={styles.hint}>Cargando categorías...</p>}
+              {categoryLevels.map((cats, idx) => (
+                <select
+                  key={`cat-level-${idx}`}
+                  className={styles.select}
+                  value={selectedCategories[idx] || ''}
+                  onChange={(e) => handleSelectCategory(idx, e.target.value)}
+                  disabled={categoryLoading}
+                >
+                  <option value="">{idx === 0 ? 'Elige categoría' : 'Elige subcategoría'}</option>
+                  {cats.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({cat.id})
+                    </option>
+                  ))}
+                </select>
+              ))}
+              {categoryLoading && <p className={styles.hint}>Cargando...</p>}
+              {form.categoryId && <p className={styles.hint}>Categoría seleccionada: {form.categoryId}</p>}
+            </div>
+          </label>
+          <label>
+            <span>ID de categoría manual (hoja)</span>
             <input
+              className={styles.select}
               value={form.categoryId}
               onChange={(e) => onChange('categoryId', e.target.value)}
-              placeholder="MLA1051..."
+              placeholder="Ej: MLA1055"
             />
           </label>
           <label className={styles.fullRow}>
@@ -203,6 +278,14 @@ export function CreateOrImport() {
               value={form.description}
               onChange={(e) => onChange('description', e.target.value)}
               rows={3}
+            />
+          </label>
+          <label className={styles.fullRow}>
+            <span>Imágenes (URLs públicas, una por línea)</span>
+            <textarea
+              value={picturesInput}
+              onChange={(e) => setPicturesInput(e.target.value)}
+              rows={2}
             />
           </label>
         </div>

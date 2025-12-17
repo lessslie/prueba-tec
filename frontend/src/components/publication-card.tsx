@@ -75,7 +75,18 @@ export function PublicationCard({ publication }: Props) {
     <article className={styles.card}>
       <header className={styles.cardHeader}>
         <div>
-          <p className={styles.meliId}>{publication.meliItemId}</p>
+          <p className={styles.meliId}>
+            {publication.meliItemId}
+            {publication.permalink && (
+              <>
+                {' '}
+                ·{' '}
+                <a href={publication.permalink} target="_blank" rel="noreferrer">
+                  Ver en ML
+                </a>
+              </>
+            )}
+          </p>
           <h3>{publication.title}</h3>
         </div>
         <div className={styles.price}>

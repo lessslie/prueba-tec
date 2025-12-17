@@ -8,6 +8,7 @@ export interface PublicationDescriptionDto {
 export interface PublicationDto {
   id: string;
   meliItemId: string;
+  permalink?: string | null;
   title: string;
   price: number;
   status: string;
@@ -35,6 +36,7 @@ export interface CreatePublicationInput {
   soldQuantity: number;
   categoryId: string;
   description?: string;
+  pictures?: string[];
 }
 
 export interface UpdatePublicationInput extends Partial<CreatePublicationInput> {}

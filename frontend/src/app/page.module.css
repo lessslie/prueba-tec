@@ -150,9 +150,21 @@
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(15, 23, 42, 0.9);
   color: #e5e7eb;
   padding: 10px;
+}
+
+.categoryStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hint {
+  color: #a5b4fc;
+  font-size: 12px;
+  margin: 0;
 }
 
 .secondaryButton {
@@ -209,6 +221,12 @@
   font-size: 12px;
   color: #94a3b8;
   margin: 0 0 4px;
+}
+
+.meliId a {
+  color: #a5b4fc;
+  text-decoration: underline;
+  font-weight: 600;
 }
 
 .card h3 {

@@ -7,6 +7,9 @@ export class ResponsePublicationDto {
   @ApiProperty({ example: 'MLA123456789' })
   meliItemId!: string;
 
+  @ApiProperty({ example: 'https://articulo.mercadolibre.com.ar/MLA123456789' })
+  permalink?: string | null;
+
   @ApiProperty({ example: 'iPhone 13 Pro Max 256GB' })
   title!: string;
 
@@ -31,4 +34,3 @@ export class ResponsePublicationDto {
   @ApiProperty({ example: '2024-01-15T10:30:00Z' })
   updatedAt!: Date;
 }
-

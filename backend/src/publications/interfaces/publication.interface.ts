@@ -11,6 +11,7 @@ export interface PublicationSummary {
 
 export interface MeliPublicationPayload {
   meliItemId: string;
+  permalink?: string | null;
   title: string;
   price: number;
   status: string;
@@ -20,5 +21,4 @@ export interface MeliPublicationPayload {
   description?: string;
   metadata?: Record<string, unknown> | null;
 }
-
 

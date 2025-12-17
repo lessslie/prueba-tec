@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Publication } from './entities/publication.entity';
@@ -8,6 +8,8 @@ import { UpdatePublicationDto } from './dto/update-publication.dto';
 import { PublicationWithDescriptionDto } from './dto/publication-with-description.dto';
 import { MeliPublicationPayload } from './interfaces/publication.interface';
 import { ListPublicationsQueryDto } from './dto/list-publications-query.dto';
+import { MeliService } from '../meli/meli.service';
+import { PublishMeliDto } from './dto/publish-meli.dto';
 
 @Injectable()
 export class PublicationsService {
@@ -16,11 +18,26 @@ export class PublicationsService {
     private readonly publicationRepository: Repository<Publication>,
     @InjectRepository(PublicationDescription)
     private readonly descriptionRepository: Repository<PublicationDescription>,
+    @Inject(forwardRef(() => MeliService))
+    private readonly meliService: MeliService,
   ) {}
+
+  async createAndPublishToMeli(
+    createDto: PublishMeliDto,
+  ): Promise<PublicationWithDescriptionDto> {
+    return this.meliService.createItemFromApp({
+      title: createDto.title,
+      price: createDto.price,
+      availableQuantity: createDto.availableQuantity,
+      categoryId: createDto.categoryId,
+      description: createDto.description,
+    });
+  }
 
   async create(createDto: CreatePublicationDto): Promise<PublicationWithDescriptionDto> {
     const publication = this.publicationRepository.create({
       meliItemId: createDto.meliItemId,
+      permalink: null,
       title: createDto.title,
       price: createDto.price,
       status: createDto.status,
@@ -133,6 +150,7 @@ export class PublicationsService {
       existing.availableQuantity = payload.availableQuantity;
       existing.soldQuantity = payload.soldQuantity;
       existing.categoryId = payload.categoryId;
+      existing.permalink = payload.permalink ?? existing.permalink ?? null;
       await this.publicationRepository.save(existing);
 
       if (payload.description) {
@@ -156,6 +174,7 @@ export class PublicationsService {
 
     const publication = this.publicationRepository.create({
       meliItemId: payload.meliItemId,
+      permalink: payload.permalink ?? null,
       title: payload.title,
       price: payload.price,
       status: payload.status,
@@ -198,9 +217,17 @@ export class PublicationsService {
   }
 
   private mapToDto(publication: Publication): PublicationWithDescriptionDto {
+    let permalink = publication.permalink ?? null;
+
+    if (!permalink && publication.meliItemId && /^MLA\d+$/i.test(publication.meliItemId)) {
+      const numeric = publication.meliItemId.replace(/^MLA/i, '');
+      permalink = `https://articulo.mercadolibre.com.ar/MLA-${numeric}`;
+    }
+
     return {
       id: publication.id,
       meliItemId: publication.meliItemId,
+      permalink,
       title: publication.title,
       price: Number(publication.price),
       status: publication.status,

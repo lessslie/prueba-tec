@@ -16,6 +16,7 @@ import { CreatePublicationDto } from './dto/create-publication.dto';
 import { PublicationWithDescriptionDto } from './dto/publication-with-description.dto';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
 import { ListPublicationsQueryDto } from './dto/list-publications-query.dto';
+import { PublishMeliDto } from './dto/publish-meli.dto';
 
 @ApiTags('publications')
 @Controller('publications')
@@ -53,6 +54,20 @@ export class PublicationsController {
     @Body() createDto: CreatePublicationDto,
   ): Promise<PublicationWithDescriptionDto> {
     return this.publicationsService.create(createDto);
+  }
+
+  @Post('meli')
+  @ApiOperation({ summary: 'Create and publish an item in Mercado Libre' })
+  @ApiBody({ type: PublishMeliDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Publication created in Mercado Libre and persisted locally',
+    type: PublicationWithDescriptionDto,
+  })
+  async createAndPublish(
+    @Body() createDto: PublishMeliDto,
+  ): Promise<PublicationWithDescriptionDto> {
+    return this.publicationsService.createAndPublishToMeli(createDto);
   }
 
   @Get()

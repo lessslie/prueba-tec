@@ -39,6 +39,13 @@ export class MeliController {
     });
   }
 
+  @Get('categories')
+  @ApiOperation({ summary: 'Listar categorías (raíces o hijas de una categoría)' })
+  @ApiQuery({ name: 'parent', required: false, description: 'ID de la categoría padre. Si no se envía, devuelve raíces.' })
+  async categories(@Query('parent') parent?: string) {
+    return this.meliService.getCategories(parent);
+  }
+
   @Get('auth')
   @ApiOperation({ summary: 'Redirect to Mercado Libre OAuth' })
   @ApiResponse({ status: 302, description: 'Redirect to Meli auth URL' })

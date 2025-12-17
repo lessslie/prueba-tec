@@ -19,7 +19,7 @@ async function buildError(res: Response): Promise<Error> {
 }
 
 export async function createPublication(payload: CreatePublicationInput): Promise<PublicationDto> {
-  const res = await fetch(`${API_BASE}/publications`, {
+  const res = await fetch(`${API_BASE}/publications/meli`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
