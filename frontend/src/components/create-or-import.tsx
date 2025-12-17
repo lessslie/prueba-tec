@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPublication, importFromMeli } from '../lib/api';
+import { API_BASE } from '../lib/config';
 import styles from '../app/page.module.css';
 import type { CreatePublicationInput } from '../lib/types';
 
@@ -23,6 +24,9 @@ export function CreateOrImport() {
   const [importId, setImportId] = useState('');
   const [loading, setLoading] = useState(false);
   const [slowImport, setSlowImport] = useState(false);
+  const [loadingMyItems, setLoadingMyItems] = useState(false);
+  const [myItems, setMyItems] = useState<string[]>([]);
+  const [profileLabel, setProfileLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -96,6 +100,36 @@ export function CreateOrImport() {
       clearTimeout(timer);
       setLoading(false);
       setSlowImport(false);
+    }
+  };
+
+  const loadMyItems = async () => {
+    setLoadingMyItems(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const meRes = await fetch(`${API_BASE}/meli/me`, { cache: 'no-store' });
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        setProfileLabel(`${meData.nickname || 'Usuario ML'} (#${meData.id})`);
+      }
+      const res = await fetch(`${API_BASE}/meli/my-items?limit=50`, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('No se pudieron obtener tus publicaciones de ML');
+      }
+      const data = await res.json();
+      const ids: string[] = Array.isArray(data?.results) ? data.results : [];
+      setMyItems(ids);
+      if (ids.length > 0) {
+        setImportId(ids[0]);
+      }
+      if (ids.length === 0) {
+        setSuccess('No encontramos publicaciones en tu cuenta ML. Crea una y vuelve a intentar.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'No se pudieron cargar tus publicaciones de ML');
+    } finally {
+      setLoadingMyItems(false);
     }
   };
 
@@ -199,6 +233,44 @@ export function CreateOrImport() {
             {loading ? 'Importando...' : 'Importar'}
           </button>
         </div>
+      </div>
+
+      <div className={styles.panelSection}>
+        <h3>Mis publicaciones de Mercado Libre</h3>
+        <div className={styles.importRow}>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={loadMyItems}
+            disabled={loadingMyItems}
+          >
+            {loadingMyItems ? 'Cargando...' : 'Cargar mis publicaciones'}
+          </button>
+          {profileLabel && <span className={styles.badgeSmall}>{profileLabel}</span>}
+        </div>
+        {myItems.length > 0 && (
+          <div className={styles.importRow}>
+            <select
+              className={styles.select}
+              value={importId}
+              onChange={(e) => setImportId(e.target.value)}
+            >
+              {myItems.map((id) => (
+                <option key={id} value={id}>
+                  {id}
+                </option>
+              ))}
+            </select>
+            <button
+              className={styles.secondaryButton}
+              onClick={handleImport}
+              disabled={loading}
+              type="button"
+            >
+              {loading ? 'Importando...' : 'Importar seleccionado'}
+            </button>
+          </div>
+        )}
       </div>
 
       {error && <p className={styles.errorText}>{error}</p>}
