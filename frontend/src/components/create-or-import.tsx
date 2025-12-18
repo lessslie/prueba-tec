@@ -19,7 +19,11 @@ const initialForm: CreatePublicationInput = {
   description: '',
 };
 
-export function CreateOrImport() {
+type Props = {
+  onRefresh?: () => void;
+};
+
+export function CreateOrImport({ onRefresh }: Props) {
   const router = useRouter();
   const [form, setForm] = useState<CreatePublicationInput>(initialForm);
   const [importId, setImportId] = useState('');
@@ -34,6 +38,9 @@ export function CreateOrImport() {
   const [categoryLevels, setCategoryLevels] = useState<{ id: string; name: string }[][]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const titleMinLength = 12;
+  const titleLength = form.title.trim().length;
+  const isTitleShort = titleLength > 0 && titleLength < titleMinLength;
 
   const onChange = (field: keyof CreatePublicationInput, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -86,6 +93,10 @@ export function CreateOrImport() {
       setError('Completa el título para publicar en Mercado Libre.');
       return;
     }
+    if (titleLength < titleMinLength) {
+      setError(`El titulo debe tener al menos ${titleMinLength} caracteres.`);
+      return;
+    }
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -102,6 +113,7 @@ export function CreateOrImport() {
       });
       setForm(initialForm);
       setSuccess('Publicación creada correctamente.');
+      onRefresh?.();
       router.refresh();
     } catch (err: any) {
       const msg = err?.message || 'No se pudo crear la publicación';
@@ -125,6 +137,7 @@ export function CreateOrImport() {
       await importFromMeli(importId.trim());
       setImportId('');
       setSuccess('Importación en progreso: la publicación fue traída desde Mercado Libre.');
+      onRefresh?.();
       router.refresh();
     } catch (err: any) {
       const rawMsg = err?.message || 'No se pudo importar desde Mercado Libre';
@@ -210,10 +223,16 @@ export function CreateOrImport() {
           <label>
             <span>Título</span>
             <input
+              className={isTitleShort ? styles.inputError : undefined}
               value={form.title}
               onChange={(e) => onChange('title', e.target.value)}
               placeholder="Título"
             />
+            {isTitleShort && (
+              <span className={styles.fieldError}>
+                Usa un titulo mas descriptivo (min {titleMinLength} caracteres).
+              </span>
+            )}
           </label>
           <label>
             <span>Precio</span>

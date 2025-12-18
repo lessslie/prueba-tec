@@ -66,6 +66,16 @@ export default function Home() {
     loadData(stored);
   }, [router]);
 
+  useEffect(() => {
+    const handleFocus = () => loadData(token);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("visibilitychange", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, [token]);
+
   const handleLogout = () => {
     clearToken();
     setToken(null);
@@ -102,9 +112,6 @@ export default function Home() {
             una publicación y corre el análisis.
           </p>
           <div className={styles.actionsRow}>
-            {meliConnected && (
-              <span className={styles.linkButton}>Cuenta Mercado Libre conectada</span>
-            )}
             <button type="button" className={styles.linkButton} onClick={handleConnectMeli}>
               {meliConnected ? "Reconectar Mercado Libre" : "Conectar Mercado Libre"}
             </button>
@@ -118,7 +125,25 @@ export default function Home() {
         </div>
       </header>
 
-      <CreateOrImport />
+      {!meliConnected && (
+        <div className={styles.noticeCard}>
+          <div>
+            <h3>Conecta tu cuenta de Mercado Libre</h3>
+            <p className={styles.subtitle}>
+              Para importar y publicar, primero conecta tu cuenta desde el flujo de OAuth.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={() => router.push("/connect-ml")}
+          >
+            Conectar ahora
+          </button>
+        </div>
+      )}
+
+      <CreateOrImport onRefresh={() => loadData(token)} />
 
       {error && <p className={styles.errorText}>{error}</p>}
 

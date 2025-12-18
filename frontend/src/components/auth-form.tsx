@@ -58,7 +58,7 @@ export function AuthForm({ mode }: Props) {
         throw new Error('No se recibio un token valido.');
       }
       setToken(data.accessToken);
-      router.replace('/');
+      router.replace('/connect-ml');
     } catch (err: any) {
       setError(err?.message || 'No se pudo iniciar sesion');
     } finally {

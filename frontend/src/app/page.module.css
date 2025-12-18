@@ -218,6 +218,16 @@
   padding: 10px;
 }
 
+.inputError {
+  border-color: rgba(248, 113, 113, 0.7);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+.fieldError {
+  color: #fca5a5;
+  font-size: 12px;
+}
+
 .fullRow {
   grid-column: 1 / -1;
 }
@@ -373,6 +383,11 @@
   box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
 }
 
+.bigButton {
+  max-width: 320px;
+  margin: 6px auto 0;
+}
+
 .analyzeBlock {
   display: flex;
   flex-direction: column;
@@ -490,4 +505,20 @@
   margin: 0 0 8px;
   font-size: 18px;
   color: #f8fafc;
+}
+
+.noticeCard {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.18), rgba(14, 165, 233, 0.12));
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.noticeCard h3 {
+  margin: 0 0 6px;
 }
