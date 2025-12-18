@@ -24,17 +24,28 @@ export class PublicationsService {
 
   async createAndPublishToMeli(
     createDto: PublishMeliDto,
+    ownerUserId: string | null,
   ): Promise<PublicationWithDescriptionDto> {
-    return this.meliService.createItemFromApp({
-      title: createDto.title,
-      price: createDto.price,
-      availableQuantity: createDto.availableQuantity,
-      categoryId: createDto.categoryId,
-      description: createDto.description,
-    });
+    if (!ownerUserId) {
+      throw new ConflictException('Usuario no autenticado para publicar en Mercado Libre');
+    }
+    return this.meliService.createItemFromApp(
+      {
+        title: createDto.title,
+        price: createDto.price,
+        availableQuantity: createDto.availableQuantity,
+        categoryId: createDto.categoryId,
+        description: createDto.description,
+        pictures: createDto.pictures,
+      },
+      ownerUserId,
+    );
   }
 
-  async create(createDto: CreatePublicationDto): Promise<PublicationWithDescriptionDto> {
+  async create(
+    createDto: CreatePublicationDto,
+    ownerUserId: string | null,
+  ): Promise<PublicationWithDescriptionDto> {
     const publication = this.publicationRepository.create({
       meliItemId: createDto.meliItemId,
       permalink: null,
@@ -44,6 +55,7 @@ export class PublicationsService {
       availableQuantity: createDto.availableQuantity,
       soldQuantity: createDto.soldQuantity,
       categoryId: createDto.categoryId,
+      ownerUserId,
     });
 
     const savedPublication = await this.savePublication(publication);
@@ -56,10 +68,13 @@ export class PublicationsService {
       await this.descriptionRepository.save(description);
     }
 
-    return this.findOne(savedPublication.id);
+    return this.findOne(savedPublication.id, ownerUserId ?? undefined);
   }
 
-  async findAll(query?: ListPublicationsQueryDto): Promise<PublicationWithDescriptionDto[]> {
+  async findAll(
+    query: ListPublicationsQueryDto,
+    ownerUserId: string | null,
+  ): Promise<PublicationWithDescriptionDto[]> {
     const take = query?.limit ?? 50;
     const skip = query?.offset ?? 0;
     const publications = await this.publicationRepository.find({
@@ -67,34 +82,44 @@ export class PublicationsService {
       order: { createdAt: 'DESC' },
       take,
       skip,
+      where: ownerUserId ? { ownerUserId } : {},
     });
 
     return publications.map((pub) => this.mapToDto(pub));
   }
 
-  async findOne(id: string): Promise<PublicationWithDescriptionDto> {
+  async findOne(id: string, ownerUserId?: string): Promise<PublicationWithDescriptionDto> {
     const publication = await this.publicationRepository.findOne({
       where: { id },
       relations: ['descriptions'],
     });
 
-    if (!publication) {
+    if (!publication || (ownerUserId && publication.ownerUserId && publication.ownerUserId !== ownerUserId)) {
       throw new NotFoundException(`Publication with ID ${id} not found`);
     }
 
     return this.mapToDto(publication);
   }
 
-  async findByMeliItemId(meliItemId: string): Promise<PublicationWithDescriptionDto | null> {
+  async findByMeliItemId(
+    meliItemId: string,
+    ownerUserId?: string,
+  ): Promise<PublicationWithDescriptionDto | null> {
     const publication = await this.publicationRepository.findOne({
       where: { meliItemId },
       relations: ['descriptions'],
     });
 
-    return publication ? this.mapToDto(publication) : null;
+    if (!publication) return null;
+    if (ownerUserId && publication.ownerUserId && publication.ownerUserId !== ownerUserId) return null;
+    return this.mapToDto(publication);
   }
 
-  async update(id: string, updateDto: UpdatePublicationDto): Promise<PublicationWithDescriptionDto> {
+  async update(
+    id: string,
+    updateDto: UpdatePublicationDto,
+    ownerUserId: string | null,
+  ): Promise<PublicationWithDescriptionDto> {
     const publication = await this.publicationRepository.findOne({
       where: { id },
       relations: ['descriptions'],
@@ -106,6 +131,9 @@ export class PublicationsService {
 
     const { description, ...rest } = updateDto;
     Object.assign(publication, rest);
+    if (ownerUserId) {
+      publication.ownerUserId = ownerUserId;
+    }
     await this.savePublication(publication);
 
     if (description !== undefined) {
@@ -122,16 +150,20 @@ export class PublicationsService {
       }
     }
 
-    return this.findOne(id);
+    return this.findOne(id, ownerUserId ?? undefined);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, ownerUserId: string | null): Promise<void> {
     const publication = await this.publicationRepository.findOne({
       where: { id },
     });
 
     if (!publication) {
       throw new NotFoundException(`Publication with ID ${id} not found`);
+    }
+
+    if (ownerUserId && publication.ownerUserId && publication.ownerUserId !== ownerUserId) {
+      throw new ConflictException('No puedes eliminar publicaciones de otro usuario');
     }
 
     await this.publicationRepository.remove(publication);
@@ -151,6 +183,7 @@ export class PublicationsService {
       existing.soldQuantity = payload.soldQuantity;
       existing.categoryId = payload.categoryId;
       existing.permalink = payload.permalink ?? existing.permalink ?? null;
+      if (payload.ownerUserId) existing.ownerUserId = payload.ownerUserId;
       await this.publicationRepository.save(existing);
 
       if (payload.description) {
@@ -169,7 +202,7 @@ export class PublicationsService {
         }
       }
 
-      return this.findOne(existing.id);
+      return this.findOne(existing.id, payload.ownerUserId ?? undefined);
     }
 
     const publication = this.publicationRepository.create({
@@ -181,6 +214,7 @@ export class PublicationsService {
       availableQuantity: payload.availableQuantity,
       soldQuantity: payload.soldQuantity,
       categoryId: payload.categoryId,
+      ownerUserId: payload.ownerUserId ?? null,
     });
 
     const savedPublication = await this.publicationRepository.save(publication);
@@ -194,7 +228,7 @@ export class PublicationsService {
       await this.descriptionRepository.save(description);
     }
 
-    return this.findOne(savedPublication.id);
+    return this.findOne(savedPublication.id, payload.ownerUserId ?? undefined);
   }
 
   private async savePublication(publication: Publication): Promise<Publication> {
@@ -234,6 +268,7 @@ export class PublicationsService {
       availableQuantity: publication.availableQuantity,
       soldQuantity: publication.soldQuantity,
       categoryId: publication.categoryId,
+      ownerUserId: publication.ownerUserId ?? null,
       createdAt: publication.createdAt,
       updatedAt: publication.updatedAt,
       descriptions: publication.descriptions?.map((desc) => ({

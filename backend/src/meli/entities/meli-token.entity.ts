@@ -26,6 +26,10 @@ export class MeliToken {
   @Column({ name: 'user_id', type: 'bigint', nullable: true })
   userId!: number | null;
 
+  // Relación con usuario de la app (UUID)
+  @Column({ name: 'owner_user_id', type: 'uuid', nullable: true })
+  ownerUserId!: string | null;
+
   @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt!: Date;
 
@@ -35,4 +39,3 @@ export class MeliToken {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }
-

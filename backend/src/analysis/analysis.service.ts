@@ -24,9 +24,12 @@ export class AnalysisService {
 
   async analyzePublication(
     publicationId: string,
+    ownerUserId: string | null,
     options?: { force?: boolean },
   ): Promise<AnalysisResponseDto> {
-    const publication = await this.publicationsService.findOne(publicationId).catch(() => null);
+    const publication = await this.publicationsService
+      .findOne(publicationId, ownerUserId ?? undefined)
+      .catch(() => null);
     if (!publication) {
       throw new NotFoundException(`Publication with ID ${publicationId} not found`);
     }

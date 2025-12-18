@@ -37,6 +37,9 @@ export class Publication {
   @Column()
   categoryId!: string;
 
+  @Column({ name: 'owner_user_id', type: 'uuid', nullable: true })
+  ownerUserId!: string | null;
+
   @OneToMany(
     () => PublicationDescription,
     (description) => description.publication,
@@ -50,4 +53,3 @@ export class Publication {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }
-

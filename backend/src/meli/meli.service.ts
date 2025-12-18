@@ -34,9 +34,9 @@ export class MeliService {
     private readonly publicationsService: PublicationsService,
   ) {}
 
-  async getProfile() {
-    const latestToken = await this.getLatestToken();
-    const accessToken = await this.ensureAccessToken();
+  async getProfile(ownerUserId: string) {
+    const latestToken = await this.getLatestToken(ownerUserId);
+    const accessToken = await this.ensureAccessToken(ownerUserId);
 
     try {
       const response$ = this.httpService.get<{ id: number; nickname?: string; status?: any }>(
@@ -59,9 +59,9 @@ export class MeliService {
     }
   }
 
-  async listOwnItems(params?: { limit?: number; offset?: number; includeFilters?: boolean }) {
-    const accessToken = await this.ensureAccessToken();
-    const profile = await this.getProfile();
+  async listOwnItems(params: { ownerUserId: string; limit?: number; offset?: number; includeFilters?: boolean }) {
+    const accessToken = await this.ensureAccessToken(params.ownerUserId);
+    const profile = await this.getProfile(params.ownerUserId);
 
     const query = new URLSearchParams();
     if (params?.limit) query.append('limit', params.limit.toString());
@@ -86,23 +86,25 @@ export class MeliService {
     }
   }
 
-  getAuthUrl(state?: string): string {
+  getAuthUrl(ownerUserId: string, state?: string): string {
     const clientId = this.getClientId();
     const redirectUri = this.getRedirectUri();
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
       redirect_uri: redirectUri,
+      state: ownerUserId,
     });
 
     if (state) {
-      params.append('state', state);
+      params.append('app_state', state);
     }
 
     return `https://auth.mercadolibre.com/authorization?${params.toString()}`;
   }
 
-  async handleCallback(code: string): Promise<MeliToken> {
+  async handleCallback(code: string, state?: string): Promise<MeliToken> {
+    const ownerUserId = state || null;
     const tokenResponse = await this.exchangeCodeForToken(code);
     const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000);
 
@@ -112,16 +114,17 @@ export class MeliService {
       tokenType: tokenResponse.token_type,
       scope: tokenResponse.scope ?? null,
       userId: tokenResponse.user_id,
+      ownerUserId,
       expiresAt,
     });
 
     return this.meliTokenRepository.save(token);
   }
 
-  async importItem(itemId: string) {
+  async importItem(itemId: string, ownerUserId: string) {
     try {
       const parsedId = this.extractItemOrProductId(itemId);
-      const accessToken = await this.ensureAccessToken();
+      const accessToken = await this.ensureAccessToken(ownerUserId);
 
       // Try first as item_id
       let actualItemId = parsedId;
@@ -168,6 +171,7 @@ export class MeliService {
         categoryId: item.category_id,
         description: plainDescription || undefined,
         metadata: { rawItem: item, rawDescription: description },
+        ownerUserId,
       });
     } catch (error: any) {
       if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
@@ -206,8 +210,8 @@ export class MeliService {
     categoryId: string;
     description?: string;
     pictures?: string[];
-  }) {
-    const accessToken = await this.ensureAccessToken();
+  }, ownerUserId: string) {
+    const accessToken = await this.ensureAccessToken(ownerUserId);
 
     // Validar que la categoría sea hoja
     const categoryDetail = await this.getCategoryDetail(payload.categoryId);
@@ -271,6 +275,7 @@ export class MeliService {
         categoryId: createdItem.category_id,
         description: description?.plain_text || description?.text || payload.description,
         metadata: { rawItem: createdItem, rawDescription: description },
+        ownerUserId,
       });
     } catch (error: any) {
       this.logger.error(
@@ -535,9 +540,9 @@ export class MeliService {
     }
   }
 
-  private async getLatestToken(): Promise<MeliToken> {
+  private async getLatestToken(ownerUserId: string): Promise<MeliToken> {
     const token = await this.meliTokenRepository.findOne({
-      where: {},
+      where: { ownerUserId },
       order: { createdAt: 'DESC' },
     });
 
@@ -548,13 +553,13 @@ export class MeliService {
     return token;
   }
 
-  private async ensureAccessToken(): Promise<string> {
+  private async ensureAccessToken(ownerUserId: string): Promise<string> {
     const envToken = this.configService.get<string>('MELI_ACCESS_TOKEN');
     if (envToken) {
       return envToken;
     }
 
-    const latestToken = await this.getLatestToken();
+    const latestToken = await this.getLatestToken(ownerUserId);
     const expiresSoon = latestToken.expiresAt.getTime() - this.tokenExpiryBufferMs <= Date.now();
 
     if (!expiresSoon) {
@@ -606,14 +611,15 @@ export class MeliService {
     }
   }
 
-  async hasValidToken(): Promise<boolean> {
+  async hasValidToken(ownerUserId?: string): Promise<boolean> {
     const envToken = this.configService.get<string>('MELI_ACCESS_TOKEN');
     if (envToken) return true;
 
+    if (!ownerUserId) return false;
+
     try {
-      const latestToken = await this.getLatestToken();
-      const expiresSoon =
-        latestToken.expiresAt.getTime() - this.tokenExpiryBufferMs <= Date.now();
+      const latestToken = await this.getLatestToken(ownerUserId);
+      const expiresSoon = latestToken.expiresAt.getTime() - this.tokenExpiryBufferMs <= Date.now();
       return !expiresSoon;
     } catch {
       return false;

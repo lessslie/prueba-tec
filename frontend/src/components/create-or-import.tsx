@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPublication, importFromMeli } from '../lib/api';
 import { API_BASE } from '../lib/config';
+import { getAuthHeaders } from '../lib/auth';
 import styles from '../app/page.module.css';
 import type { CreatePublicationInput } from '../lib/types';
 
@@ -158,13 +159,25 @@ export function CreateOrImport() {
     setError(null);
     setSuccess(null);
     try {
-      const meRes = await fetch(`${API_BASE}/meli/me`, { cache: 'no-store' });
+      const meRes = await fetch(`${API_BASE}/meli/me`, {
+        cache: 'no-store',
+        headers: getAuthHeaders(),
+      });
+      if (meRes.status === 401) {
+        throw new Error('Debes iniciar sesión para ver tu perfil de Mercado Libre.');
+      }
       if (meRes.ok) {
         const meData = await meRes.json();
         setProfileLabel(`${meData.nickname || 'Usuario ML'} (#${meData.id})`);
       }
-      const res = await fetch(`${API_BASE}/meli/my-items?limit=50`, { cache: 'no-store' });
+      const res = await fetch(`${API_BASE}/meli/my-items?limit=50`, {
+        cache: 'no-store',
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Debes iniciar sesión para ver tus publicaciones de ML.');
+        }
         throw new Error('No se pudieron obtener tus publicaciones de ML');
       }
       const data = await res.json();

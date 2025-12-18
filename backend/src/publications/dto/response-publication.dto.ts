@@ -28,6 +28,9 @@ export class ResponsePublicationDto {
   @ApiProperty({ example: 'MLA1051' })
   categoryId!: string;
 
+  @ApiProperty({ example: 'user-uuid', nullable: true })
+  ownerUserId?: string | null;
+
   @ApiProperty({ example: '2024-01-15T10:30:00Z' })
   createdAt!: Date;
 

@@ -126,6 +126,59 @@
   font-size: 14px;
 }
 
+.authForm {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.authRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.authChoice {
+  display: flex;
+  gap: 10px;
+}
+
+.authChoice button {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.authLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.authRight {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.authFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin-left: auto;
+}
+
+.authHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .formGrid input,
 .formGrid textarea,
 .importRow input {
@@ -276,6 +329,10 @@
   color: #fff;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.authAction {
+  width: 170px;
 }
 
 .primaryButton:disabled {
