@@ -102,6 +102,7 @@ export function AuthForm({ mode }: Props) {
               <input
                 type="email"
                 autoComplete="email"
+                placeholder="tu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -111,6 +112,7 @@ export function AuthForm({ mode }: Props) {
               <input
                 type="password"
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
+                placeholder="Tu contrasena"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -121,6 +123,7 @@ export function AuthForm({ mode }: Props) {
                 <input
                   type="password"
                   autoComplete="new-password"
+                  placeholder="Repite tu contrasena"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
