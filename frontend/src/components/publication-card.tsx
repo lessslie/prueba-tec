@@ -9,9 +9,10 @@ import { AnalyzeButton } from './analyze-button';
 
 type Props = {
   publication: PublicationDto;
+  onDeleted?: (id: string) => void;
 };
 
-export function PublicationCard({ publication }: Props) {
+export function PublicationCard({ publication, onDeleted }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,6 +28,8 @@ export function PublicationCard({ publication }: Props) {
     categoryId: publication.categoryId,
     description: publication.descriptions?.[0]?.description ?? '',
   });
+
+  const isActive = (form?.status ?? publication.status)?.toLowerCase() === 'active';
 
   const onChange = (field: keyof UpdatePublicationInput, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value as any }));
@@ -61,6 +64,8 @@ export function PublicationCard({ publication }: Props) {
     setError(null);
     try {
       await deletePublication(publication.id);
+      setConfirmDelete(false);
+      onDeleted?.(publication.id);
       router.refresh();
     } catch (err: any) {
       setError(err?.message || 'No se pudo eliminar');
@@ -121,6 +126,9 @@ export function PublicationCard({ publication }: Props) {
 
       {editing && (
         <div className={styles.formGrid}>
+          <p className={styles.hint}>
+            Nota: si el item está activo en Mercado Libre, ML no permite editar precio o stock; esos campos se deshabilitan y solo se guardará localmente.
+          </p>
           <label>
             <span>Título</span>
             <input
@@ -134,6 +142,7 @@ export function PublicationCard({ publication }: Props) {
               type="number"
               value={form.price ?? 0}
               onChange={(e) => onChange('price', e.target.value)}
+              disabled={isActive}
             />
           </label>
           <label>
@@ -149,6 +158,7 @@ export function PublicationCard({ publication }: Props) {
               type="number"
               value={form.availableQuantity ?? 0}
               onChange={(e) => onChange('availableQuantity', e.target.value)}
+              disabled={isActive}
             />
           </label>
           <label>

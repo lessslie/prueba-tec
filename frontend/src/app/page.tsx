@@ -154,7 +154,14 @@ export default function Home() {
           </div>
         )}
         {publications.map((pub) => (
-          <PublicationCard publication={pub} key={pub.id} />
+          <PublicationCard
+            publication={pub}
+            key={pub.id}
+            onDeleted={(id) => {
+              setPublications((prev) => prev.filter((p) => p.id !== id));
+              loadData(token);
+            }}
+          />
         ))}
       </section>
     </div>
