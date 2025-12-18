@@ -312,6 +312,89 @@ export class MeliService {
     }
   }
 
+  async updateItemFromApp(
+    payload: {
+      meliItemId: string;
+      title?: string;
+      price?: number;
+      availableQuantity?: number;
+      status?: string;
+      description?: string;
+    },
+    ownerUserId: string,
+  ) {
+    const accessToken = await this.ensureAccessToken(ownerUserId);
+    const body: Record<string, any> = {};
+    if (payload.title) body.title = payload.title;
+    if (payload.price !== undefined) body.price = payload.price;
+    if (payload.availableQuantity !== undefined) body.available_quantity = payload.availableQuantity;
+    if (payload.status) body.status = payload.status;
+
+    try {
+      if (Object.keys(body).length > 0) {
+        const update$ = this.httpService.put(`${this.apiBase}/items/${payload.meliItemId}`, body, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        await firstValueFrom(update$);
+      }
+
+      if (payload.description !== undefined) {
+        const description$ = this.httpService.post(
+          `${this.apiBase}/items/${payload.meliItemId}/description`,
+          { plain_text: payload.description },
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+        await firstValueFrom(description$);
+      }
+
+      const updatedItem = await this.fetchItem(payload.meliItemId, accessToken);
+      const description = await this.fetchItemDescription(payload.meliItemId, accessToken);
+      return this.publicationsService.upsertFromMeli({
+        meliItemId: updatedItem.id,
+        permalink: updatedItem.permalink ?? null,
+        title: updatedItem.title,
+        price: updatedItem.price,
+        status: updatedItem.status,
+        availableQuantity: updatedItem.available_quantity,
+        soldQuantity: updatedItem.sold_quantity,
+        categoryId: updatedItem.category_id,
+        description: description?.plain_text || description?.text || payload.description,
+        metadata: { rawItem: updatedItem, rawDescription: description },
+        ownerUserId,
+      });
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || 'Error desconocido';
+      this.logger.error(
+        `updateItemFromApp error status=${error?.response?.status} msg=${msg}`,
+        error?.response?.data ? JSON.stringify(error.response.data) : undefined,
+      );
+      throw new InternalServerErrorException(
+        `No se pudo actualizar la publicacion en Mercado Libre: ${msg}`,
+      );
+    }
+  }
+
+  async pauseItem(meliItemId: string, ownerUserId: string) {
+    const accessToken = await this.ensureAccessToken(ownerUserId);
+    try {
+      const pause$ = this.httpService.put(
+        `${this.apiBase}/items/${meliItemId}`,
+        { status: 'paused' },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      await firstValueFrom(pause$);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || 'Error desconocido';
+      this.logger.error(
+        `pauseItem error status=${error?.response?.status} msg=${msg}`,
+        error?.response?.data ? JSON.stringify(error.response.data) : undefined,
+      );
+      throw new InternalServerErrorException(
+        `No se pudo pausar la publicacion en Mercado Libre: ${msg}`,
+      );
+    }
+  }
+
   async getCategories(parentId?: string) {
     try {
       if (parentId) {

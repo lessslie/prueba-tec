@@ -1,4 +1,11 @@
-import { ConflictException, Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Publication } from './entities/publication.entity';
@@ -130,6 +137,27 @@ export class PublicationsService {
     }
 
     const { description, ...rest } = updateDto;
+
+    // Si hay meliItemId y ownerUserId, intentamos actualizar tambien en Mercado Libre
+    if (publication.meliItemId && ownerUserId) {
+      try {
+        const updated = await this.meliService.updateItemFromApp(
+          {
+            meliItemId: publication.meliItemId,
+            title: rest.title ?? publication.title,
+            price: rest.price ?? publication.price,
+            availableQuantity: rest.availableQuantity ?? publication.availableQuantity,
+            status: rest.status ?? publication.status,
+            description: description ?? publication.descriptions?.[0]?.description ?? '',
+          },
+          ownerUserId,
+        );
+        return updated;
+      } catch (error: any) {
+        throw new BadRequestException(error?.message || 'No se pudo actualizar en Mercado Libre');
+      }
+    }
+
     Object.assign(publication, rest);
     if (ownerUserId) {
       publication.ownerUserId = ownerUserId;
@@ -164,6 +192,15 @@ export class PublicationsService {
 
     if (ownerUserId && publication.ownerUserId && publication.ownerUserId !== ownerUserId) {
       throw new ConflictException('No puedes eliminar publicaciones de otro usuario');
+    }
+
+    // Pausar en Mercado Libre antes de eliminar localmente
+    if (publication.meliItemId && ownerUserId) {
+      try {
+        await this.meliService.pauseItem(publication.meliItemId, ownerUserId);
+      } catch (error: any) {
+        throw new BadRequestException(error?.message || 'No se pudo pausar en Mercado Libre');
+      }
     }
 
     await this.publicationRepository.remove(publication);
