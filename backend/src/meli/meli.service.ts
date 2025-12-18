@@ -244,7 +244,6 @@ export class MeliService {
       listing_type_id: 'gold_special',
       shipping: { mode: 'not_specified' },
       attributes: baseAttributes,
-      description: payload.description ? { plain_text: payload.description } : undefined,
       pictures:
         payload.pictures && payload.pictures.length > 0
           ? payload.pictures.map((src) => ({ source: src }))
@@ -261,6 +260,25 @@ export class MeliService {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       const { data } = await firstValueFrom(response$);
+      if (payload.description) {
+        try {
+          const description$ = this.httpService.post(
+            `${this.apiBase}/items/${data.id}/description`,
+            { plain_text: payload.description },
+            { headers: { Authorization: `Bearer ${accessToken}` } },
+          );
+          await firstValueFrom(description$);
+        } catch (error: any) {
+          const descriptionMsg = error?.response?.data?.message || error?.message || 'Error desconocido';
+          this.logger.error(
+            `createItemFromApp description error status=${error?.response?.status} msg=${descriptionMsg}`,
+            error?.response?.data ? JSON.stringify(error.response.data) : undefined,
+          );
+          throw new BadRequestException(
+            `No se pudo guardar la descripcion en Mercado Libre: ${descriptionMsg}`,
+          );
+        }
+      }
       const createdItem = await this.fetchItem(data.id, accessToken);
       const description = await this.fetchItemDescription(data.id, accessToken);
 
