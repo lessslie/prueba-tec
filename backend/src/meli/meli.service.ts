@@ -193,9 +193,9 @@ export class MeliService {
     // If a full URL is provided, search on it; otherwise search on the raw string
     const target = decoded.startsWith('http') ? decoded : ` ${decoded} `;
 
-    const match = target.match(/(ML[A-Z]{0,2}-?\d{5,})/i);
+    const match = target.match(/(ML[A-Z]{0,2})-?(\d{5,})/i);
     if (match && match[1]) {
-      return match[1].replace('-', '').toUpperCase();
+      return `${match[1].toUpperCase()}${match[2]}`;
     }
 
     throw new BadRequestException(
