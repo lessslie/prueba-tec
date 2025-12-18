@@ -1,5 +1,5 @@
 import { API_BASE } from './config';
-import { getAuthHeaders } from './auth';
+import { authFetch } from './http';
 import type {
   CreatePublicationInput,
   PublicationDto,
@@ -23,9 +23,9 @@ async function buildError(res: Response): Promise<Error> {
 }
 
 export async function createPublication(payload: CreatePublicationInput): Promise<PublicationDto> {
-  const res = await fetch(`${API_BASE}/publications/meli`, {
+  const res = await authFetch(`${API_BASE}/publications/meli`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
@@ -40,9 +40,9 @@ export async function updatePublication(
   id: string,
   payload: UpdatePublicationInput,
 ): Promise<PublicationDto> {
-  const res = await fetch(`${API_BASE}/publications/${id}`, {
+  const res = await authFetch(`${API_BASE}/publications/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
@@ -54,9 +54,8 @@ export async function updatePublication(
 }
 
 export async function deletePublication(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/publications/${id}`, {
+  const res = await authFetch(`${API_BASE}/publications/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     throw await buildError(res);
@@ -64,9 +63,8 @@ export async function deletePublication(id: string): Promise<void> {
 }
 
 export async function importFromMeli(itemId: string): Promise<PublicationDto> {
-  const res = await fetch(`${API_BASE}/meli/import/${encodeURIComponent(itemId)}`, {
+  const res = await authFetch(`${API_BASE}/meli/import/${encodeURIComponent(itemId)}`, {
     method: 'GET',
-    headers: getAuthHeaders(),
   });
   if (!res.ok) {
     throw await buildError(res);

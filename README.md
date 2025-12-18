@@ -1,4 +1,4 @@
-# RataLibre · Prueba Técnica
+# RataLibre - Prueba Tecnica
 
 Backend Nest + Frontend Next para importar publicaciones de Mercado Libre, persistirlas en Postgres y analizarlas con OpenAI.
 
@@ -13,6 +13,8 @@ Backend Nest + Frontend Next para importar publicaciones de Mercado Libre, persi
 - `MELI_REDIRECT_URI` (ej: `https://<backend>/meli/callback`)
 - `FRONTEND_URL` (ej: `https://<frontend>`)
 - `FRONTEND_ORIGIN` (coma separados; ej: `https://<frontend>,http://localhost:3000`)
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN` (ej: `1d`, `1h`, `1min`)
 - `OPENAI_API_KEY`
 - **No usar** `MELI_ACCESS_TOKEN` en prod para evitar monousuario forzado.
 
@@ -22,7 +24,11 @@ Backend Nest + Frontend Next para importar publicaciones de Mercado Libre, persi
 ## Correr local
 1) Backend: `cd backend && npm install && npm run start:dev`
 2) Frontend: `cd frontend && npm install && npm run dev`
-3) Abrir `http://localhost:3000` y usar el botón “Conectar Mercado Libre” (OAuth).
+3) Abrir `http://localhost:3000/login` y usar el botón “Conectar Mercado Libre” (OAuth) desde el dashboard.
+
+## Auth
+- Las pantallas de login y registro estan en `/login` y `/register`.
+- El dashboard requiere sesion activa (JWT); cuando el token expira, se cierra sesion automaticamente y aparece un modal de aviso.
 
 ## Flujo principal
 1) **Conectar Mercado Libre**: OAuth desde el botón. Tokens se guardan solo en backend. Estado: `GET /meli/status`.

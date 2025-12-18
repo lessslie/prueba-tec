@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 import { API_BASE } from "../lib/config";
 import type { MeliStatusResponse, PublicationDto } from "../lib/types";
 import { CreateOrImport } from "../components/create-or-import";
 import { PublicationCard } from "../components/publication-card";
-import { getAuthHeaders, getToken } from "../lib/auth";
-import { AuthPanel } from "../components/auth-panel";
+import { clearToken, getToken } from "../lib/auth";
+import { authFetch } from "../lib/http";
 
 export default function Home() {
+  const router = useRouter();
   const [publications, setPublications] = useState<PublicationDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [meliConnected, setMeliConnected] = useState(false);
@@ -23,9 +25,8 @@ export default function Home() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/publications`, {
+      const res = await authFetch(`${API_BASE}/publications`, {
         cache: "no-store",
-        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         if (res.status === 401) {
@@ -41,9 +42,8 @@ export default function Home() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/meli/status`, {
+      const res = await authFetch(`${API_BASE}/meli/status`, {
         cache: "no-store",
-        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         setMeliConnected(false);
@@ -58,13 +58,18 @@ export default function Home() {
 
   useEffect(() => {
     const stored = getToken();
+    if (!stored) {
+      router.replace("/login");
+      return;
+    }
     setToken(stored);
     loadData(stored);
-  }, []);
+  }, [router]);
 
-  const handleAuthChanged = (nextToken: string | null) => {
-    setToken(nextToken);
-    loadData(nextToken);
+  const handleLogout = () => {
+    clearToken();
+    setToken(null);
+    router.replace("/login");
   };
 
   const handleConnectMeli = async () => {
@@ -73,9 +78,7 @@ export default function Home() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/meli/auth-url`, {
-        headers: getAuthHeaders(),
-      });
+      const res = await authFetch(`${API_BASE}/meli/auth-url`);
       if (!res.ok) {
         throw new Error("No se pudo iniciar la conexión con Mercado Libre");
       }
@@ -105,16 +108,15 @@ export default function Home() {
             <button type="button" className={styles.linkButton} onClick={handleConnectMeli}>
               {meliConnected ? "Reconectar Mercado Libre" : "Conectar Mercado Libre"}
             </button>
+            <button type="button" className={styles.secondaryButton} onClick={handleLogout}>
+              Cerrar sesion
+            </button>
           </div>
         </div>
         <div className={styles.badge}>
           Backend: {API_BASE.replace("http://", "").replace("https://", "")}
         </div>
       </header>
-
-      <div className={styles.actionsPanel}>
-        <AuthPanel onAuthChanged={handleAuthChanged} />
-      </div>
 
       <CreateOrImport />
 

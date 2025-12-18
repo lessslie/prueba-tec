@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPublication, importFromMeli } from '../lib/api';
 import { API_BASE } from '../lib/config';
-import { getAuthHeaders } from '../lib/auth';
+import { authFetch } from '../lib/http';
 import styles from '../app/page.module.css';
 import type { CreatePublicationInput } from '../lib/types';
 
@@ -159,9 +159,8 @@ export function CreateOrImport() {
     setError(null);
     setSuccess(null);
     try {
-      const meRes = await fetch(`${API_BASE}/meli/me`, {
+      const meRes = await authFetch(`${API_BASE}/meli/me`, {
         cache: 'no-store',
-        headers: getAuthHeaders(),
       });
       if (meRes.status === 401) {
         throw new Error('Debes iniciar sesión para ver tu perfil de Mercado Libre.');
@@ -170,9 +169,8 @@ export function CreateOrImport() {
         const meData = await meRes.json();
         setProfileLabel(`${meData.nickname || 'Usuario ML'} (#${meData.id})`);
       }
-      const res = await fetch(`${API_BASE}/meli/my-items?limit=50`, {
+      const res = await authFetch(`${API_BASE}/meli/my-items?limit=50`, {
         cache: 'no-store',
-        headers: getAuthHeaders(),
       });
       if (!res.ok) {
         if (res.status === 401) {

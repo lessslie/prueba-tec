@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { API_BASE } from '../lib/config';
-import { getAuthHeaders } from '../lib/auth';
+import { authFetch } from '../lib/http';
 import type { AnalysisResponseDto } from '../lib/types';
 import styles from '../app/page.module.css';
 
@@ -19,9 +19,9 @@ export function AnalyzeButton({ publicationId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${API_BASE}/analysis/publication/${publicationId}?force=false`,
-        { cache: 'no-store', headers: getAuthHeaders() },
+        { cache: 'no-store' },
       );
       if (!res.ok) {
         if (res.status === 401) {
