@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { API_BASE } from '../lib/config';
+import { getAuthHeaders } from '../lib/auth';
 import type { AnalysisResponseDto } from '../lib/types';
 import styles from '../app/page.module.css';
 
@@ -20,9 +21,12 @@ export function AnalyzeButton({ publicationId }: Props) {
     try {
       const res = await fetch(
         `${API_BASE}/analysis/publication/${publicationId}?force=false`,
-        { cache: 'no-store' },
+        { cache: 'no-store', headers: getAuthHeaders() },
       );
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Debes iniciar sesión para ejecutar el análisis.');
+        }
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
       const data = (await res.json()) as AnalysisResponseDto;

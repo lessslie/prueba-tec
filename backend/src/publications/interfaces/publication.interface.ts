@@ -7,6 +7,7 @@ export interface PublicationSummary {
   availableQuantity: number;
   soldQuantity: number;
   categoryId: string;
+  ownerUserId?: string | null;
 }
 
 export interface MeliPublicationPayload {
@@ -20,5 +21,5 @@ export interface MeliPublicationPayload {
   categoryId: string;
   description?: string;
   metadata?: Record<string, unknown> | null;
+  ownerUserId?: string | null;
 }
-

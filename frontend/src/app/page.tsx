@@ -1,40 +1,92 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 import { API_BASE } from "../lib/config";
 import type { MeliStatusResponse, PublicationDto } from "../lib/types";
-import { AnalyzeButton } from "../components/analyze-button";
 import { CreateOrImport } from "../components/create-or-import";
 import { PublicationCard } from "../components/publication-card";
+import { getAuthHeaders, getToken } from "../lib/auth";
+import { AuthPanel } from "../components/auth-panel";
 
-async function fetchPublications(): Promise<PublicationDto[]> {
-  const res = await fetch(`${API_BASE}/publications`, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error("No se pudo cargar el listado de publicaciones");
-  }
-  return res.json();
-}
+export default function Home() {
+  const [publications, setPublications] = useState<PublicationDto[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [meliConnected, setMeliConnected] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
-async function fetchMeliStatus(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/meli/status`, { cache: "no-store" });
-    if (!res.ok) return false;
-    const data = (await res.json()) as MeliStatusResponse;
-    return data.connected;
-  } catch {
-    return false;
-  }
-}
+  const loadData = async (activeToken: string | null) => {
+    if (!activeToken) {
+      setError("Debes iniciar sesión para ver publicaciones.");
+      setPublications([]);
+      setMeliConnected(false);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/publications`, {
+        cache: "no-store",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Debes iniciar sesión para ver publicaciones.");
+        }
+        throw new Error("No se pudo cargar el listado de publicaciones");
+      }
+      const data = await res.json();
+      setPublications(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || "Error cargando publicaciones");
+    }
 
-export default async function Home() {
-  let publications: PublicationDto[] = [];
-  let error: string | null = null;
-  let meliConnected = false;
+    try {
+      const res = await fetch(`${API_BASE}/meli/status`, {
+        cache: "no-store",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        setMeliConnected(false);
+        return;
+      }
+      const data = (await res.json()) as MeliStatusResponse;
+      setMeliConnected(data.connected);
+    } catch {
+      setMeliConnected(false);
+    }
+  };
 
-  try {
-    publications = await fetchPublications();
-    meliConnected = await fetchMeliStatus();
-  } catch (err: any) {
-    error = err?.message || "Error cargando publicaciones";
-  }
+  useEffect(() => {
+    const stored = getToken();
+    setToken(stored);
+    loadData(stored);
+  }, []);
+
+  const handleAuthChanged = (nextToken: string | null) => {
+    setToken(nextToken);
+    loadData(nextToken);
+  };
+
+  const handleConnectMeli = async () => {
+    if (!token) {
+      setError("Debes iniciar sesión para conectar Mercado Libre.");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/meli/auth-url`, {
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        throw new Error("No se pudo iniciar la conexión con Mercado Libre");
+      }
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      setError(err?.message || "No se pudo iniciar la conexión con Mercado Libre");
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -50,15 +102,19 @@ export default async function Home() {
             {meliConnected && (
               <span className={styles.linkButton}>Cuenta Mercado Libre conectada</span>
             )}
-            <a className={styles.linkButton} href={`${API_BASE}/meli/auth`}>
-              {meliConnected ? 'Reconectar Mercado Libre' : 'Conectar Mercado Libre'}
-            </a>
+            <button type="button" className={styles.linkButton} onClick={handleConnectMeli}>
+              {meliConnected ? "Reconectar Mercado Libre" : "Conectar Mercado Libre"}
+            </button>
           </div>
         </div>
         <div className={styles.badge}>
           Backend: {API_BASE.replace("http://", "").replace("https://", "")}
         </div>
       </header>
+
+      <div className={styles.actionsPanel}>
+        <AuthPanel onAuthChanged={handleAuthChanged} />
+      </div>
 
       <CreateOrImport />
 
@@ -67,7 +123,7 @@ export default async function Home() {
       <section className={styles.grid}>
         {publications.length === 0 && !error && (
           <div className={styles.empty}>
-            <p>No hay publicaciones aún. Importa una desde /meli/import/:itemId.</p>
+            <p>No hay publicaciones aún.</p>
           </div>
         )}
         {publications.map((pub) => (
