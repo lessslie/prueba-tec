@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
@@ -20,6 +21,8 @@ import { PublishMeliDto } from './dto/publish-meli.dto';
 
 @Injectable()
 export class PublicationsService {
+  private readonly logger = new Logger(PublicationsService.name);
+
   constructor(
     @InjectRepository(Publication)
     private readonly publicationRepository: Repository<Publication>,
@@ -181,7 +184,7 @@ export class PublicationsService {
     return this.findOne(id, ownerUserId ?? undefined);
   }
 
-  async remove(id: string, ownerUserId: string | null): Promise<void> {
+  async pausePublication(id: string, ownerUserId: string | null): Promise<{ pausedInMeli: boolean }> {
     const publication = await this.publicationRepository.findOne({
       where: { id },
     });
@@ -191,19 +194,52 @@ export class PublicationsService {
     }
 
     if (ownerUserId && publication.ownerUserId && publication.ownerUserId !== ownerUserId) {
-      throw new ConflictException('No puedes eliminar publicaciones de otro usuario');
+      throw new ConflictException('No puedes pausar publicaciones de otro usuario');
     }
 
-    // Pausar en Mercado Libre antes de eliminar localmente
+    let pausedInMeli = false;
+
+    // Intentar pausar en Mercado Libre
     if (publication.meliItemId && ownerUserId) {
       try {
         await this.meliService.pauseItem(publication.meliItemId, ownerUserId);
+        pausedInMeli = true;
+        this.logger.log(`Publication ${id} paused in Mercado Libre successfully`);
       } catch (error: any) {
-        throw new BadRequestException(error?.message || 'No se pudo pausar en Mercado Libre');
+        // Solo loguear el error, no bloquear el pausado local
+        this.logger.warn(
+          `Could not pause publication ${id} in Mercado Libre: ${error?.message}. Marking as paused locally anyway.`
+        );
       }
     }
 
-    await this.publicationRepository.remove(publication);
+    // Marcar como pausada localmente
+    publication.isPausedLocally = true;
+    await this.publicationRepository.save(publication);
+
+    return { pausedInMeli };
+  }
+
+  async activatePublication(id: string, ownerUserId: string | null): Promise<PublicationWithDescriptionDto> {
+    const publication = await this.publicationRepository.findOne({
+      where: { id },
+    });
+
+    if (!publication) {
+      throw new NotFoundException(`Publication with ID ${id} not found`);
+    }
+
+    if (ownerUserId && publication.ownerUserId && publication.ownerUserId !== ownerUserId) {
+      throw new ConflictException('No puedes activar publicaciones de otro usuario');
+    }
+
+    // Marcar como activa localmente
+    publication.isPausedLocally = false;
+    await this.publicationRepository.save(publication);
+
+    this.logger.log(`Publication ${id} activated locally`);
+
+    return this.findOne(id, ownerUserId ?? undefined);
   }
 
   async upsertFromMeli(payload: MeliPublicationPayload): Promise<PublicationWithDescriptionDto> {
@@ -305,6 +341,7 @@ export class PublicationsService {
       availableQuantity: publication.availableQuantity,
       soldQuantity: publication.soldQuantity,
       categoryId: publication.categoryId,
+      isPausedLocally: publication.isPausedLocally,
       ownerUserId: publication.ownerUserId ?? null,
       createdAt: publication.createdAt,
       updatedAt: publication.updatedAt,

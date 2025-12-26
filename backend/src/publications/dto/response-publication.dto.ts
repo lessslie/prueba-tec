@@ -28,6 +28,9 @@ export class ResponsePublicationDto {
   @ApiProperty({ example: 'MLA1051' })
   categoryId!: string;
 
+  @ApiProperty({ example: false })
+  isPausedLocally!: boolean;
+
   @ApiProperty({ example: 'user-uuid', nullable: true })
   ownerUserId?: string | null;
 

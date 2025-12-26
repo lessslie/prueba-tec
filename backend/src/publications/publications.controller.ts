@@ -100,14 +100,36 @@ export class PublicationsController {
     return this.publicationsService.update(id, updateDto, req.user?.userId ?? null);
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/pause')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Delete a publication' })
+  @ApiOperation({ summary: 'Pause a publication locally and attempt to pause it in Mercado Libre' })
   @ApiParam({ name: 'id', description: 'Publication UUID' })
-  @ApiResponse({ status: 204, description: 'Publication deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Publication paused locally. Returns whether it was also paused in ML.',
+    schema: {
+      type: 'object',
+      properties: {
+        pausedInMeli: { type: 'boolean', description: 'Whether the item was successfully paused in Mercado Libre' }
+      }
+    }
+  })
   @ApiResponse({ status: 404, description: 'Publication not found' })
-  async remove(@Param('id') id: string, @Req() req: any): Promise<void> {
-    return this.publicationsService.remove(id, req.user?.userId ?? null);
+  async pause(@Param('id') id: string, @Req() req: any): Promise<{ pausedInMeli: boolean }> {
+    return this.publicationsService.pausePublication(id, req.user?.userId ?? null);
+  }
+
+  @Post(':id/activate')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Activate a paused publication locally' })
+  @ApiParam({ name: 'id', description: 'Publication UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Publication activated locally',
+    type: PublicationWithDescriptionDto
+  })
+  @ApiResponse({ status: 404, description: 'Publication not found' })
+  async activate(@Param('id') id: string, @Req() req: any): Promise<PublicationWithDescriptionDto> {
+    return this.publicationsService.activatePublication(id, req.user?.userId ?? null);
   }
 }

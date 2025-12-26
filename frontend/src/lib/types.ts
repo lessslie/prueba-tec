@@ -15,6 +15,7 @@ export interface PublicationDto {
   availableQuantity: number;
   soldQuantity: number;
   categoryId: string;
+  isPausedLocally: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
   descriptions?: PublicationDescriptionDto[];

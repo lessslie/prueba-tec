@@ -53,13 +53,24 @@ export async function updatePublication(
   return res.json();
 }
 
-export async function deletePublication(id: string): Promise<void> {
-  const res = await authFetch(`${API_BASE}/publications/${id}`, {
-    method: 'DELETE',
+export async function pausePublication(id: string): Promise<{ pausedInMeli: boolean }> {
+  const res = await authFetch(`${API_BASE}/publications/${id}/pause`, {
+    method: 'POST',
   });
   if (!res.ok) {
     throw await buildError(res);
   }
+  return res.json();
+}
+
+export async function activatePublication(id: string): Promise<PublicationDto> {
+  const res = await authFetch(`${API_BASE}/publications/${id}/activate`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw await buildError(res);
+  }
+  return res.json();
 }
 
 export async function importFromMeli(itemId: string): Promise<PublicationDto> {
