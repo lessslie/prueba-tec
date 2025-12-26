@@ -72,12 +72,20 @@ export class MeliController {
   @ApiOperation({ summary: 'OAuth callback from Mercado Libre' })
   @ApiResponse({ status: 200, description: 'Token stored successfully' })
   async handleCallback(@Query() query: CallbackQueryDto, @Res() res: Response) {
-    await this.meliService.handleCallback(query.code, query.state);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectUrl = frontendUrl.includes('?')
-      ? `${frontendUrl}&meli=connected`
-      : `${frontendUrl}?meli=connected`;
-    return res.redirect(redirectUrl);
+    try {
+      await this.meliService.handleCallback(query.code, query.state);
+      const redirectUrl = frontendUrl.includes('?')
+        ? `${frontendUrl}&meli=connected`
+        : `${frontendUrl}?meli=connected`;
+      return res.redirect(redirectUrl);
+    } catch (error: any) {
+      const errorMsg = encodeURIComponent(error?.message || 'Error al conectar con Mercado Libre');
+      const errorUrl = frontendUrl.includes('?')
+        ? `${frontendUrl}&meli=error&error=${errorMsg}`
+        : `${frontendUrl}?meli=error&error=${errorMsg}`;
+      return res.redirect(errorUrl);
+    }
   }
 
   @Get('status')

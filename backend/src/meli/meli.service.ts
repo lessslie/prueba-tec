@@ -105,20 +105,32 @@ export class MeliService {
 
   async handleCallback(code: string, state?: string): Promise<MeliToken> {
     const ownerUserId = state || null;
-    const tokenResponse = await this.exchangeCodeForToken(code);
-    const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000);
+    this.logger.log(`handleCallback called with ownerUserId=${ownerUserId}`);
 
-    const token = this.meliTokenRepository.create({
-      accessToken: tokenResponse.access_token,
-      refreshToken: tokenResponse.refresh_token,
-      tokenType: tokenResponse.token_type,
-      scope: tokenResponse.scope ?? null,
-      userId: tokenResponse.user_id,
-      ownerUserId,
-      expiresAt,
-    });
+    try {
+      const tokenResponse = await this.exchangeCodeForToken(code);
+      const expiresAt = new Date(Date.now() + tokenResponse.expires_in * 1000);
 
-    return this.meliTokenRepository.save(token);
+      const token = this.meliTokenRepository.create({
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        tokenType: tokenResponse.token_type,
+        scope: tokenResponse.scope ?? null,
+        userId: tokenResponse.user_id,
+        ownerUserId,
+        expiresAt,
+      });
+
+      const saved = await this.meliTokenRepository.save(token);
+      this.logger.log(`Token saved successfully for ownerUserId=${ownerUserId}`);
+      return saved;
+    } catch (error: any) {
+      this.logger.error(
+        `handleCallback failed: ${error?.message}`,
+        error?.stack
+      );
+      throw error;
+    }
   }
 
   async importItem(itemId: string, ownerUserId: string) {
@@ -635,9 +647,18 @@ export class MeliService {
         },
       );
       const { data } = await firstValueFrom(response$);
+      this.logger.log(`Token exchange successful for user_id=${data.user_id}`);
       return data;
-    } catch (error) {
-      throw new InternalServerErrorException('Error exchanging code for token');
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Unknown error';
+      const errorDesc = error?.response?.data?.error_description || '';
+      this.logger.error(
+        `exchangeCodeForToken failed: ${errorMsg} - ${errorDesc}`,
+        error?.response?.data ? JSON.stringify(error.response.data) : error?.stack
+      );
+      throw new InternalServerErrorException(
+        `Error exchanging code for token: ${errorMsg}${errorDesc ? ' - ' + errorDesc : ''}`
+      );
     }
   }
 
