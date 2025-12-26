@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../app/page.module.css';
 import type { PublicationDto, UpdatePublicationInput } from '../lib/types';
-import { deletePublication, updatePublication } from '../lib/api';
+import { pausePublication, activatePublication, updatePublication } from '../lib/api';
 import { AnalyzeButton } from './analyze-button';
 
 type Props = {
@@ -17,7 +17,8 @@ export function PublicationCard({ publication, onDeleted }: Props) {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [confirmPause, setConfirmPause] = useState(false);
 
   const [form, setForm] = useState<UpdatePublicationInput>({
     title: publication.title,
@@ -55,33 +56,71 @@ export function PublicationCard({ publication, onDeleted }: Props) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
+  const handlePause = async () => {
+    if (!confirmPause) {
+      setConfirmPause(true);
       return;
     }
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
-      await deletePublication(publication.id);
-      setConfirmDelete(false);
-      onDeleted?.(publication.id);
+      const result = await pausePublication(publication.id);
+      setConfirmPause(false);
+
+      // Mostrar mensaje según si se pausó o no en ML
+      if (result.pausedInMeli) {
+        setSuccess('Publicación pausada localmente y en Mercado Libre.');
+      } else {
+        setSuccess('Publicación pausada localmente. No se pudo pausar en Mercado Libre (puede que ya esté pausada o el token haya expirado).');
+      }
+
       router.refresh();
     } catch (err: any) {
-      setError(err?.message || 'No se pudo eliminar');
+      setError(err?.message || 'No se pudo pausar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      // Si está editando, guardar cambios primero
+      if (editing) {
+        await updatePublication(publication.id, {
+          ...form,
+          price: form.price !== undefined ? Number(form.price) : undefined,
+          availableQuantity:
+            form.availableQuantity !== undefined ? Number(form.availableQuantity) : undefined,
+          soldQuantity: form.soldQuantity !== undefined ? Number(form.soldQuantity) : undefined,
+        });
+        setEditing(false);
+      }
+
+      // Luego activar
+      await activatePublication(publication.id);
+      setSuccess(editing ? 'Publicación guardada y activada correctamente.' : 'Publicación activada localmente.');
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message || 'No se pudo activar');
     } finally {
       setLoading(false);
     }
   };
 
   const description = publication.descriptions?.[0]?.description;
+  const isPaused = publication.isPausedLocally;
 
   return (
-    <article className={styles.card}>
+    <article className={`${styles.card} ${isPaused ? styles.cardPaused : ''}`}>
       <header className={styles.cardHeader}>
         <div>
           <p className={styles.meliId}>
             {publication.meliItemId}
+            {isPaused && <span className={styles.pausedBadge}>Pausada en ML</span>}
             {publication.permalink && (
               <>
                 {' '}
@@ -126,9 +165,15 @@ export function PublicationCard({ publication, onDeleted }: Props) {
 
       {editing && (
         <div className={styles.formGrid}>
-          <p className={styles.hint}>
-            Nota: si el item está activo en Mercado Libre, ML no permite editar precio o stock; esos campos se deshabilitan y solo se guardará localmente.
-          </p>
+          {isPaused ? (
+            <p className={styles.hint}>
+              Publicación pausada: podés editar todos los campos. Los cambios se guardarán localmente cuando actives la publicación.
+            </p>
+          ) : (
+            <p className={styles.hint}>
+              Nota: si el item está activo en Mercado Libre, ML no permite editar precio o stock; esos campos se deshabilitan y solo se guardará localmente.
+            </p>
+          )}
           <label>
             <span>Título</span>
             <input
@@ -142,7 +187,7 @@ export function PublicationCard({ publication, onDeleted }: Props) {
               type="number"
               value={form.price ?? 0}
               onChange={(e) => onChange('price', e.target.value)}
-              disabled={isActive}
+              disabled={isActive && !isPaused}
             />
           </label>
           <label>
@@ -158,7 +203,7 @@ export function PublicationCard({ publication, onDeleted }: Props) {
               type="number"
               value={form.availableQuantity ?? 0}
               onChange={(e) => onChange('availableQuantity', e.target.value)}
-              disabled={isActive}
+              disabled={isActive && !isPaused}
             />
           </label>
           <label>
@@ -191,40 +236,56 @@ export function PublicationCard({ publication, onDeleted }: Props) {
         <button className={styles.secondaryButton} type="button" onClick={() => setEditing((prev) => !prev)}>
           {editing ? 'Cancelar' : 'Editar'}
         </button>
-        <button className={styles.dangerButton} type="button" onClick={handleDelete} disabled={loading}>
-          Eliminar
-        </button>
+        {isPaused ? (
+          <button className={styles.primaryButton} type="button" onClick={handleActivate} disabled={loading}>
+            {loading ? 'Activando...' : editing ? 'Guardar y Activar' : 'Activar'}
+          </button>
+        ) : (
+          <button className={styles.dangerButton} type="button" onClick={handlePause} disabled={loading}>
+            Pausar en ML
+          </button>
+        )}
       </div>
 
-      {editing ? (
-        <button
-          className={styles.primaryButton}
-          onClick={handleUpdate}
-          disabled={loading}
-          type="button"
-        >
-          {loading ? 'Guardando...' : 'Guardar cambios'}
-        </button>
-      ) : (
-        <AnalyzeButton publicationId={publication.id} />
+      {!isPaused && (
+        <>
+          {editing ? (
+            <button
+              className={styles.primaryButton}
+              onClick={handleUpdate}
+              disabled={loading}
+              type="button"
+            >
+              {loading ? 'Guardando...' : 'Guardar cambios'}
+            </button>
+          ) : (
+            <AnalyzeButton publicationId={publication.id} />
+          )}
+        </>
       )}
 
       {error && <p className={styles.errorText}>{error}</p>}
+      {success && <p className={styles.successText}>{success}</p>}
 
-      {confirmDelete && (
+      {confirmPause && (
         <div className={styles.modalBackdrop}>
           <div className={styles.modalContent}>
-            <p>¿Eliminar esta publicación?</p>
+            <h4>¿Pausar esta publicación?</h4>
+            <p className={styles.hint} style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+              Se pausará localmente y se intentará pausar en Mercado Libre.
+              <br />
+              <strong>Nota:</strong> La publicación no se elimina, solo se marca como pausada.
+            </p>
             <div className={styles.modalActions}>
               <button
                 className={styles.secondaryButton}
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => setConfirmPause(false)}
                 type="button"
               >
                 Cancelar
               </button>
-              <button className={styles.dangerButton} onClick={handleDelete} type="button" disabled={loading}>
-                Sí, eliminar
+              <button className={styles.dangerButton} onClick={handlePause} type="button" disabled={loading}>
+                {loading ? 'Pausando...' : 'Sí, pausar'}
               </button>
             </div>
           </div>

@@ -40,6 +40,9 @@ export class Publication {
   @Column({ name: 'owner_user_id', type: 'uuid', nullable: true })
   ownerUserId!: string | null;
 
+  @Column({ name: 'is_paused_locally', type: 'boolean', default: false })
+  isPausedLocally!: boolean;
+
   @OneToMany(
     () => PublicationDescription,
     (description) => description.publication,

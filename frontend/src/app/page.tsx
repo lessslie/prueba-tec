@@ -16,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [meliConnected, setMeliConnected] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [showPaused, setShowPaused] = useState(true);
 
   const loadData = async (activeToken: string | null) => {
     if (!activeToken) {
@@ -145,6 +146,17 @@ export default function Home() {
 
       <CreateOrImport onRefresh={() => loadData(token)} />
 
+      <div className={styles.filterSection}>
+        <label>
+          <input
+            type="checkbox"
+            checked={showPaused}
+            onChange={(e) => setShowPaused(e.target.checked)}
+          />
+          Mostrar publicaciones pausadas
+        </label>
+      </div>
+
       {error && <p className={styles.errorText}>{error}</p>}
 
       <section className={styles.grid}>
@@ -153,16 +165,18 @@ export default function Home() {
             <p>No hay publicaciones aún.</p>
           </div>
         )}
-        {publications.map((pub) => (
-          <PublicationCard
-            publication={pub}
-            key={pub.id}
-            onDeleted={(id) => {
-              setPublications((prev) => prev.filter((p) => p.id !== id));
-              loadData(token);
-            }}
-          />
-        ))}
+        {publications
+          .filter((pub) => showPaused || !pub.isPausedLocally)
+          .map((pub) => (
+            <PublicationCard
+              publication={pub}
+              key={pub.id}
+              onDeleted={(id) => {
+                setPublications((prev) => prev.filter((p) => p.id !== id));
+                loadData(token);
+              }}
+            />
+          ))}
       </section>
     </div>
   );
