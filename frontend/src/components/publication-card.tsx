@@ -41,11 +41,14 @@ export function PublicationCard({ publication, onDeleted }: Props) {
     setError(null);
     try {
       await updatePublication(publication.id, {
-        ...form,
+        title: form.title,
         price: form.price !== undefined ? Number(form.price) : undefined,
+        status: form.status,
         availableQuantity:
           form.availableQuantity !== undefined ? Number(form.availableQuantity) : undefined,
         soldQuantity: form.soldQuantity !== undefined ? Number(form.soldQuantity) : undefined,
+        categoryId: form.categoryId,
+        description: form.description,
       });
       setEditing(false);
       router.refresh();
@@ -77,6 +80,7 @@ export function PublicationCard({ publication, onDeleted }: Props) {
 
       router.refresh();
     } catch (err: any) {
+      setConfirmPause(false);
       setError(err?.message || 'No se pudo pausar');
     } finally {
       setLoading(false);
@@ -87,22 +91,26 @@ export function PublicationCard({ publication, onDeleted }: Props) {
     setLoading(true);
     setError(null);
     setSuccess(null);
+    const wasEditing = editing;
     try {
       // Si está editando, guardar cambios primero
       if (editing) {
         await updatePublication(publication.id, {
-          ...form,
+          title: form.title,
           price: form.price !== undefined ? Number(form.price) : undefined,
+          status: form.status,
           availableQuantity:
             form.availableQuantity !== undefined ? Number(form.availableQuantity) : undefined,
           soldQuantity: form.soldQuantity !== undefined ? Number(form.soldQuantity) : undefined,
+          categoryId: form.categoryId,
+          description: form.description,
         });
         setEditing(false);
       }
 
       // Luego activar
       await activatePublication(publication.id);
-      setSuccess(editing ? 'Publicación guardada y activada correctamente.' : 'Publicación activada localmente.');
+      setSuccess(wasEditing ? 'Publicación guardada y activada correctamente.' : 'Publicación activada localmente.');
       router.refresh();
     } catch (err: any) {
       setError(err?.message || 'No se pudo activar');
