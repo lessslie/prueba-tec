@@ -1,47 +1,360 @@
-# RataLibre - Prueba Tecnica
+<div align="center">
 
-Backend Nest + Frontend Next para importar publicaciones de Mercado Libre, persistirlas en Postgres y analizarlas con OpenAI.
+```
+ __  __      _ _____           _       _     _
+|  \/  | ___| |_   _|         (_)     | |   | |
+| \  / |/ _ \ | | |  _ __  ___ _  __ _| |__ | |_ ___
+| |\/| |  __/ | | | | '_ \/ __| |/ _` | '_ \| __/ __|
+| |  | |  __/ |_| |_| | | \__ \ | (_| | | | | |_\__ \
+|_|  |_|\___|_|\___/|_| |_|___/_|\__, |_| |_|\__|___/
+                                  __/ |
+                                 |___/
+```
 
-## Deploy público
-- Frontend: `https://prueba-tec-nu.vercel.app`
-- Backend: `https://prueba-tec-rmp9.onrender.com`
+**📊 Inteligencia de negocio para tus publicaciones de Mercado Libre**
 
-## Variables de entorno
-### Backend (`backend/`)
-- `DATABASE_URL` (Postgres/Supabase)
-- `MELI_CLIENT_ID`, `MELI_CLIENT_SECRET`
-- `MELI_REDIRECT_URI` (ej: `https://<backend>/meli/callback`)
-- `FRONTEND_URL` (ej: `https://<frontend>`)
-- `FRONTEND_ORIGIN` (coma separados; ej: `https://<frontend>,http://localhost:3000`)
-- `JWT_SECRET`
-- `JWT_EXPIRES_IN` (ej: `1d`, `1h`, `1min`)
-- `OPENAI_API_KEY`
-- **No usar** `MELI_ACCESS_TOKEN` en prod para evitar monousuario forzado.
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
 
-### Frontend (`frontend/`)
-- `NEXT_PUBLIC_API_BASE` (URL del backend, sin slash final)
+[🚀 Ver Demo](https://prueba-tec-nu.vercel.app) • [📚 API Docs](https://prueba-tec-rmp9.onrender.com/api/docs)
 
-## Correr local
-1) Backend: `cd backend && npm install && npm run start:dev`
-2) Frontend: `cd frontend && npm install && npm run dev`
-3) Abrir `http://localhost:3000/login` y usar el botón “Conectar Mercado Libre” (OAuth) desde el dashboard.
+</div>
 
-## Auth
-- Las pantallas de login y registro estan en `/login` y `/register`.
-- El dashboard requiere sesion activa (JWT); cuando el token expira, se cierra sesion automaticamente y aparece un modal de aviso.
+---
 
-## Flujo principal
-1) **Conectar Mercado Libre**: OAuth desde el botón. Tokens se guardan solo en backend. Estado: `GET /meli/status`.
-2) **Crear o importar**:
-   - Manual: el **Item ID se deja vacío** (ML lo genera). Elegir categoría en cascada; si ML bloquea subcategorías (403 PolicyAgent), usar el campo de **ID manual (hoja)**.
-   - Celulares (MLA1055) ya incluyen atributos mínimos (COLOR, IS_DUAL_SIM, CARRIER + BRAND/MODEL). Si otra categoría pide más atributos, el error 400 indica cuáles y se deben enviar.
-   - Imágenes: URLs públicas directas (jpg/png). ML puede tardar unos minutos en procesarlas.
-   - ML puede dejar la publicación en `paused` para cuentas nuevas/test; activarla desde ML.
-   - Importar: pegar item/product ID o URL completa. Si 401/403, reconectar ML.
-3) **Mis publicaciones ML**: botón “Cargar mis publicaciones” usa `/meli/me` y `/meli/my-items`; se pueden importar desde el selector.
-4) **Analizar publicación**: usa OpenAI y guarda el análisis.
-5) Swagger en backend: `/api/docs`.
+## 🎯 ¿Qué es MeliInsights?
 
-## Notas
-- App monousuario (token ML en servidor). Multiusuario requiere auth + owner_id en tablas.
-- Tokens/secretos solo en variables de entorno (no commitear).
+**MeliInsights** es una plataforma fullstack que te ayuda a optimizar tus ventas en Mercado Libre mediante análisis inteligente impulsado por IA. Conecta tu cuenta de ML, importa tus publicaciones, y obtén recomendaciones personalizadas para mejorar títulos, descripciones, precios y más.
+
+### ✨ Features Principales
+
+- 🔐 **Autenticación OAuth2** - Conexión segura con tu cuenta de Mercado Libre
+- 📥 **Importación Automática** - Sincroniza tus publicaciones existentes en segundos
+- 🤖 **Análisis con IA** - OpenAI analiza y sugiere mejoras para cada publicación
+- 📝 **Editor Integrado** - Edita títulos, precios, stock y descripciones
+- ⏸️ **Gestión de Estado** - Pausa y reactiva publicaciones desde la app
+- 🎨 **UI Moderna** - Interfaz responsive y profesional con Next.js 16
+- 📊 **Dashboard Intuitivo** - Visualiza todas tus publicaciones en un solo lugar
+- 🔄 **Sincronización Bidireccional** - Cambios reflejados en Mercado Libre
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **UI**: CSS Modules + Tailwind-like custom styles
+- **State Management**: React Hooks
+- **HTTP Client**: Fetch API
+- **Deploy**: Vercel
+
+### Backend
+- **Framework**: NestJS
+- **Language**: TypeScript
+- **Database**: PostgreSQL (Supabase)
+- **ORM**: TypeORM
+- **Authentication**: Passport.js + JWT
+- **API Integration**:
+  - Mercado Libre API (OAuth2)
+  - OpenAI API (GPT-4)
+- **Documentation**: Swagger/OpenAPI
+- **Deploy**: Render
+
+### DevOps & Tools
+- **Version Control**: Git & GitHub
+- **Package Manager**: npm
+- **Code Quality**: ESLint + TypeScript strict mode
+- **Environment**: Node.js 18+
+
+---
+
+## 📸 Screenshots
+
+> 📝 *Screenshots coming soon - app is live at the demo link above!*
+
+---
+
+## 🚀 Demo en Vivo
+
+- **Frontend**: [https://prueba-tec-nu.vercel.app](https://prueba-tec-nu.vercel.app)
+- **API Backend**: [https://prueba-tec-rmp9.onrender.com](https://prueba-tec-rmp9.onrender.com)
+- **Swagger Docs**: [https://prueba-tec-rmp9.onrender.com/api/docs](https://prueba-tec-rmp9.onrender.com/api/docs)
+
+---
+
+## 🏃‍♂️ Instalación y Desarrollo Local
+
+### Prerequisitos
+
+- Node.js 18+ y npm
+- PostgreSQL (o cuenta de Supabase)
+- Cuenta de desarrollador de Mercado Libre
+- API Key de OpenAI
+
+### 1. Clonar el Repositorio
+
+```bash
+git clone https://github.com/lessslie/prueba-tec.git
+cd meli-insights
+```
+
+### 2. Configurar Backend
+
+```bash
+cd backend
+npm install
+```
+
+Crear archivo `.env` basado en `.env.example`:
+
+```env
+# Database
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Mercado Libre OAuth
+MELI_CLIENT_ID=tu_client_id
+MELI_CLIENT_SECRET=tu_client_secret
+MELI_REDIRECT_URI=http://localhost:10000/meli/callback
+
+# Frontend URLs (CORS)
+FRONTEND_URL=http://localhost:3000
+FRONTEND_ORIGIN=http://localhost:3000,https://tu-dominio.com
+
+# JWT
+JWT_SECRET=tu_secreto_super_seguro
+JWT_EXPIRES_IN=7d
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+```
+
+Iniciar backend en modo desarrollo:
+
+```bash
+npm run start:dev
+```
+
+El backend estará en `http://localhost:10000`
+
+### 3. Configurar Frontend
+
+```bash
+cd frontend
+npm install
+```
+
+Crear archivo `.env.local`:
+
+```env
+NEXT_PUBLIC_API_BASE=http://localhost:10000
+```
+
+Iniciar frontend:
+
+```bash
+npm run dev
+```
+
+El frontend estará en `http://localhost:3000`
+
+### 4. Primer Uso
+
+1. Abre `http://localhost:3000/register` y crea una cuenta
+2. Inicia sesión en `http://localhost:3000/login`
+3. Conecta tu cuenta de Mercado Libre con el botón OAuth
+4. ¡Comienza a importar y analizar tus publicaciones!
+
+---
+
+## 📖 ¿Cómo Funciona?
+
+### Flujo de Autenticación
+```
+Usuario → Login/Registro → JWT Token → Dashboard
+                                      ↓
+                              OAuth ML → Tokens guardados
+```
+
+### Flujo de Análisis
+```
+Seleccionar Publicación → Click "Analizar"
+                              ↓
+                    OpenAI GPT-4 procesa:
+                    - Título
+                    - Descripción
+                    - Precio
+                    - Categoría
+                              ↓
+                    Recomendaciones guardadas en DB
+                              ↓
+                    Mostrar sugerencias al usuario
+```
+
+### Arquitectura
+
+```
+┌─────────────────┐
+│   Next.js App   │  ← Usuario
+│   (Frontend)    │
+└────────┬────────┘
+         │ REST API
+         ↓
+┌─────────────────┐
+│   NestJS API    │
+│   (Backend)     │
+└────┬───┬───┬────┘
+     │   │   │
+     ↓   ↓   ↓
+  ┌──┐ ┌──┐ ┌────┐
+  │PG│ │ML│ │ AI │
+  └──┘ └──┘ └────┘
+```
+
+---
+
+## 🔑 Variables de Entorno
+
+### Backend (`backend/.env`)
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `DATABASE_URL` | Connection string de PostgreSQL | `postgresql://...` |
+| `MELI_CLIENT_ID` | Client ID de Mercado Libre | `123456789` |
+| `MELI_CLIENT_SECRET` | Secret de ML | `abc123...` |
+| `MELI_REDIRECT_URI` | Callback OAuth | `http://localhost:10000/meli/callback` |
+| `FRONTEND_URL` | URL principal del frontend | `http://localhost:3000` |
+| `FRONTEND_ORIGIN` | Orígenes permitidos (CORS) | `http://localhost:3000,https://...` |
+| `JWT_SECRET` | Secret para firmar JWTs | `mi_secreto_seguro` |
+| `JWT_EXPIRES_IN` | Duración del token | `7d`, `24h`, `60m` |
+| `OPENAI_API_KEY` | API Key de OpenAI | `sk-...` |
+
+### Frontend (`frontend/.env.local`)
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_BASE` | URL del backend (sin `/` final) | `http://localhost:10000` |
+
+---
+
+## 📚 API Endpoints Principales
+
+### Auth
+- `POST /auth/register` - Crear cuenta
+- `POST /auth/login` - Iniciar sesión
+
+### Mercado Libre
+- `GET /meli/auth` - Iniciar OAuth
+- `GET /meli/callback` - Callback OAuth
+- `GET /meli/status` - Estado de conexión
+- `GET /meli/my-items` - Mis publicaciones en ML
+
+### Publicaciones
+- `GET /publications` - Listar publicaciones
+- `POST /publications` - Crear publicación
+- `GET /publications/:id` - Ver detalle
+- `PATCH /publications/:id` - Actualizar
+- `POST /publications/:id/pause` - Pausar
+- `POST /publications/:id/activate` - Activar
+
+### Análisis
+- `POST /analysis/publications/:id` - Analizar con IA
+- `GET /analysis/publications/:id` - Ver análisis guardado
+
+**Documentación completa**: Ver Swagger en `/api/docs`
+
+---
+
+## 🎨 Features Destacadas
+
+### 1. Análisis Inteligente con GPT-4
+Utiliza prompts especializados para generar recomendaciones contextuales basadas en:
+- Categoría del producto
+- Competencia en el mercado
+- Mejores prácticas de copywriting
+- Optimización SEO para Mercado Libre
+
+### 2. Gestión de Estado Avanzada
+- Pausa publicaciones directamente desde la app
+- Edita mientras están pausadas
+- Reactiva con un click
+- Sincronización automática con ML
+
+### 3. Seguridad
+- Autenticación JWT con expiración configurable
+- Tokens de ML nunca expuestos al frontend
+- CORS configurado correctamente
+- Passwords hasheados con bcrypt
+
+### 4. Experiencia de Usuario
+- Loading states en todas las operaciones
+- Mensajes de error claros
+- Confirmaciones para acciones destructivas
+- UI responsive mobile-first
+
+---
+
+## 🚧 Roadmap
+
+### Próximas Features
+- [ ] Dashboard con métricas y gráficos
+- [ ] Análisis batch de múltiples publicaciones
+- [ ] Exportar reportes a PDF/Excel
+- [ ] Notificaciones por email
+- [ ] Modo oscuro
+- [ ] Tests unitarios y E2E
+- [ ] Caché con Redis
+- [ ] WebSockets para actualizaciones en tiempo real
+
+---
+
+## 🤝 Contribuir
+
+Este es un proyecto de portfolio personal, pero si encontrás algún bug o tenés sugerencias:
+
+1. Abrí un [Issue](https://github.com/lessslie/prueba-tec/issues)
+2. Hacé un Fork del proyecto
+3. Creá una rama: `git checkout -b feature/AmazingFeature`
+4. Commit: `git commit -m 'Add some AmazingFeature'`
+5. Push: `git push origin feature/AmazingFeature`
+6. Abrí un Pull Request
+
+---
+
+## 👨‍💻 Desarrollador
+
+**Agata Morales**
+
+- Portfolio: [tu-portfolio.com](https://tu-portfolio.com)
+- LinkedIn: [linkedin.com/in/tu-perfil](https://linkedin.com/in/tu-perfil)
+- GitHub: [@lessslie](https://github.com/tu-usuario)
+- Email: tu@email.com
+
+---
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 🙏 Agradecimientos
+
+- [Mercado Libre Developers](https://developers.mercadolibre.com/) - Por su excelente API y documentación
+- [OpenAI](https://openai.com/) - Por hacer posible el análisis inteligente
+- [Vercel](https://vercel.com/) - Por el hosting del frontend
+- [Render](https://render.com/) - Por el hosting del backend
+- [Supabase](https://supabase.com/) - Por la base de datos PostgreSQL
+
+---
+
+<div align="center">
+
+**⭐ Si te gustó este proyecto, dejá una estrella en GitHub!**
+
+Hecho con ❤️ y ☕ por [Agata Morales]
+
+</div>

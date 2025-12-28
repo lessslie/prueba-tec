@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RataLibre",
-  description: "RataLibre technical test",
+  title: "MeliInsights - Business Intelligence for Mercado Libre",
+  description: "AI-powered analytics and insights for your Mercado Libre publications",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

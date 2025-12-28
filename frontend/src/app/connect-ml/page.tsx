@@ -61,7 +61,7 @@ export default function ConnectMeliPage() {
     <div className={`${styles.page} ${styles.authPage}`}>
       <header className={`${styles.hero} ${styles.authHero}`}>
         <div>
-          <p className={styles.eyebrow}>RataLibre technical test</p>
+          <p className={styles.eyebrow}>MELIINSIGHTS</p>
           <h1>Conectar Mercado Libre</h1>
           <p className={styles.subtitle}>
             Conecta tu cuenta de Mercado Libre para importar y publicar productos desde el panel.
@@ -81,7 +81,7 @@ export default function ConnectMeliPage() {
               <button
                 className={`${styles.primaryButton} ${styles.bigButton}`}
                 type="button"
-                onClick={() => router.push('/')}
+                onClick={() => router.push('/dashboard')}
               >
                 Ir al dashboard
               </button>

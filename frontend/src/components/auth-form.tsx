@@ -21,7 +21,7 @@ export function AuthForm({ mode }: Props) {
 
   useEffect(() => {
     if (getToken()) {
-      router.replace('/');
+      router.replace('/dashboard');
     }
   }, [router]);
 

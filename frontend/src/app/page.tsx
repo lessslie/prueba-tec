@@ -1,183 +1,146 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import styles from "./page.module.css";
-import { API_BASE } from "../lib/config";
-import type { MeliStatusResponse, PublicationDto } from "../lib/types";
-import { CreateOrImport } from "../components/create-or-import";
-import { PublicationCard } from "../components/publication-card";
-import { clearToken, getToken } from "../lib/auth";
-import { authFetch } from "../lib/http";
+import Link from 'next/link';
+import styles from './landing.module.css';
 
-export default function Home() {
-  const router = useRouter();
-  const [publications, setPublications] = useState<PublicationDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [meliConnected, setMeliConnected] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [showPaused, setShowPaused] = useState(true);
-
-  const loadData = async (activeToken: string | null) => {
-    if (!activeToken) {
-      setError("Debes iniciar sesión para ver publicaciones.");
-      setPublications([]);
-      setMeliConnected(false);
-      return;
-    }
-    try {
-      const res = await authFetch(`${API_BASE}/publications`, {
-        cache: "no-store",
-      });
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error("Debes iniciar sesión para ver publicaciones.");
-        }
-        throw new Error("No se pudo cargar el listado de publicaciones");
-      }
-      const data = await res.json();
-      setPublications(data);
-      setError(null);
-    } catch (err: any) {
-      setError(err?.message || "Error cargando publicaciones");
-    }
-
-    try {
-      const res = await authFetch(`${API_BASE}/meli/status`, {
-        cache: "no-store",
-      });
-      if (!res.ok) {
-        setMeliConnected(false);
-        return;
-      }
-      const data = (await res.json()) as MeliStatusResponse;
-      setMeliConnected(data.connected);
-    } catch {
-      setMeliConnected(false);
-    }
-  };
-
-  useEffect(() => {
-    const stored = getToken();
-    if (!stored) {
-      router.replace("/login");
-      return;
-    }
-    setToken(stored);
-    loadData(stored);
-  }, [router]);
-
-  useEffect(() => {
-    const handleFocus = () => loadData(token);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("visibilitychange", handleFocus);
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("visibilitychange", handleFocus);
-    };
-  }, [token]);
-
-  const handleLogout = () => {
-    clearToken();
-    setToken(null);
-    router.replace("/login");
-  };
-
-  const handleConnectMeli = async () => {
-    if (!token) {
-      setError("Debes iniciar sesión para conectar Mercado Libre.");
-      return;
-    }
-    try {
-      const res = await authFetch(`${API_BASE}/meli/auth-url`);
-      if (!res.ok) {
-        throw new Error("No se pudo iniciar la conexión con Mercado Libre");
-      }
-      const data = await res.json();
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (err: any) {
-      setError(err?.message || "No se pudo iniciar la conexión con Mercado Libre");
-    }
-  };
-
+export default function LandingPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>RataLibre · Technical test</p>
-          <h1>Publicaciones de Mercado Libre</h1>
-          <p className={styles.subtitle}>
-            Importa desde ML, guarda en Postgres y genera recomendaciones con IA. Selecciona
-            una publicación y corre el análisis.
-          </p>
-          <div className={styles.actionsRow}>
-            <button type="button" className={styles.linkButton} onClick={handleConnectMeli}>
-              {meliConnected ? "Reconectar Mercado Libre" : "Conectar Mercado Libre"}
-            </button>
-            <button type="button" className={styles.secondaryButton} onClick={handleLogout}>
-              Cerrar sesion
-            </button>
-          </div>
-        </div>
-        <div className={styles.badge}>
-          Backend: {API_BASE.replace("http://", "").replace("https://", "")}
+    <div className={styles.landingPage}>
+      {/* Header/Navigation */}
+      <header className={styles.header}>
+        <div className={styles.logo}>MeliInsights</div>
+        <div className={styles.headerActions}>
+          <Link href="/login" className={styles.loginButton}>
+            Iniciar Sesión
+          </Link>
+          <Link href="/register" className={styles.signupButton}>
+            Crear Cuenta
+          </Link>
         </div>
       </header>
 
-      {!meliConnected && (
-        <div className={styles.noticeCard}>
-          <div>
-            <h3>Conecta tu cuenta de Mercado Libre</h3>
-            <p className={styles.subtitle}>
-              Para importar y publicar, primero conecta tu cuenta desde el flujo de OAuth.
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.primaryButton}
-            onClick={() => router.push("/connect-ml")}
-          >
-            Conectar ahora
-          </button>
+      {/* Hero Section */}
+      <section className={styles.hero}>
+        <span className={styles.eyebrow}>AI-Powered Analytics</span>
+        <h1 className={styles.heroTitle}>
+          Optimiza tus ventas en Mercado Libre con Inteligencia Artificial
+        </h1>
+        <p className={styles.heroSubtitle}>
+          Conecta tu cuenta, importa tus publicaciones y obtén recomendaciones personalizadas
+          impulsadas por IA para mejorar títulos, descripciones, precios y más.
+        </p>
+        <div className={styles.ctaButtons}>
+          <Link href="/register" className={styles.primaryCta}>
+            Comenzar Gratis
+          </Link>
+          <Link href="/login" className={styles.secondaryCta}>
+            Iniciar Sesión
+          </Link>
         </div>
-      )}
-
-      <CreateOrImport onRefresh={() => loadData(token)} />
-
-      <div className={styles.filterSection}>
-        <label>
-          <input
-            type="checkbox"
-            checked={showPaused}
-            onChange={(e) => setShowPaused(e.target.checked)}
-          />
-          Mostrar publicaciones pausadas
-        </label>
-      </div>
-
-      {error && <p className={styles.errorText}>{error}</p>}
-
-      <section className={styles.grid}>
-        {publications.length === 0 && !error && (
-          <div className={styles.empty}>
-            <p>No hay publicaciones aún.</p>
-          </div>
-        )}
-        {publications
-          .filter((pub) => showPaused || !pub.isPausedLocally)
-          .map((pub) => (
-            <PublicationCard
-              publication={pub}
-              key={pub.id}
-              onDeleted={(id) => {
-                setPublications((prev) => prev.filter((p) => p.id !== id));
-                loadData(token);
-              }}
-            />
-          ))}
       </section>
+
+      {/* Features Section */}
+      <section className={styles.featuresSection}>
+        <div className={styles.featuresContainer}>
+          <h2 className={styles.sectionTitle}>
+            Todo lo que necesitas para vender mejor
+          </h2>
+          <p className={styles.sectionSubtitle}>
+            Herramientas profesionales para optimizar tus publicaciones y aumentar tus ventas
+          </p>
+
+          <div className={styles.featuresGrid}>
+            <div className={styles.featureCard}>
+              <span className={styles.featureIcon}>🔐</span>
+              <h3 className={styles.featureTitle}>Conexión Segura OAuth2</h3>
+              <p className={styles.featureDescription}>
+                Conecta tu cuenta de Mercado Libre de forma segura con autenticación OAuth2.
+                Tus credenciales nunca son compartidas.
+              </p>
+            </div>
+
+            <div className={styles.featureCard}>
+              <span className={styles.featureIcon}>📥</span>
+              <h3 className={styles.featureTitle}>Importación Automática</h3>
+              <p className={styles.featureDescription}>
+                Sincroniza todas tus publicaciones existentes en segundos. No necesitas cargar
+                nada manualmente.
+              </p>
+            </div>
+
+            <div className={styles.featureCard}>
+              <span className={styles.featureIcon}>🤖</span>
+              <h3 className={styles.featureTitle}>Análisis con IA</h3>
+              <p className={styles.featureDescription}>
+                OpenAI GPT-4 analiza cada publicación y genera recomendaciones específicas para
+                optimizar ventas.
+              </p>
+            </div>
+
+            <div className={styles.featureCard}>
+              <span className={styles.featureIcon}>📝</span>
+              <h3 className={styles.featureTitle}>Editor Integrado</h3>
+              <p className={styles.featureDescription}>
+                Edita títulos, precios, stock y descripciones directamente desde la plataforma
+                con sincronización en tiempo real.
+              </p>
+            </div>
+
+            <div className={styles.featureCard}>
+              <span className={styles.featureIcon}>⏸️</span>
+              <h3 className={styles.featureTitle}>Gestión de Estado</h3>
+              <p className={styles.featureDescription}>
+                Pausa y reactiva publicaciones con un click. Edita mientras están pausadas y
+                activa cuando estés listo.
+              </p>
+            </div>
+
+            <div className={styles.featureCard}>
+              <span className={styles.featureIcon}>📊</span>
+              <h3 className={styles.featureTitle}>Dashboard Intuitivo</h3>
+              <p className={styles.featureDescription}>
+                Visualiza todas tus publicaciones en un panel centralizado con filtros,
+                búsqueda y organización inteligente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className={styles.ctaSection}>
+        <div className={styles.ctaContainer}>
+          <h2 className={styles.ctaTitle}>
+            ¿Listo para vender más?
+          </h2>
+          <p className={styles.ctaText}>
+            Únete hoy y comienza a optimizar tus publicaciones con inteligencia artificial
+          </p>
+          <Link href="/register" className={styles.primaryCta}>
+            Crear Cuenta Gratis
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <div className={styles.footerContainer}>
+          <p className={styles.footerText}>
+            © 2025 MeliInsights. Hecho con ❤️ y ☕
+          </p>
+          <div className={styles.footerLinks}>
+            <a href="https://github.com/lessslie/prueba-tec" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+            <a href="https://prueba-tec-rmp9.onrender.com/api/docs" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
+              API Docs
+            </a>
+            <a href="https://linkedin.com/in/agata-morales" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
+              LinkedIn
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 {
-  "name": "backend",
+  "name": "meliinsights-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "MeliInsights API - Business intelligence backend for Mercado Libre",
   "main": "dist/src/main",
   "scripts": {
     "build": "nest build",
@@ -9,9 +9,9 @@
     "start:dev": "nest start --watch",
     "start:prod": "node ."
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["mercado-libre", "openai", "analytics", "business-intelligence"],
+  "author": "Tu Nombre <tu@email.com>",
+  "license": "MIT",
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.1.9",

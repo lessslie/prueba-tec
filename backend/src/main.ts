@@ -30,8 +30,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('RataLibre API')
-    .setDescription('API para analisis de publicaciones de Mercado Libre')
+    .setTitle('MeliInsights API')
+    .setDescription('Business intelligence API for Mercado Libre publications')
     .setVersion('1.0.0')
     .build();
 

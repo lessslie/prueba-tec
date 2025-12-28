@@ -1,6 +1,7 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "meliinsights-frontend",
+  "version": "1.0.0",
+  "description": "MeliInsights - AI-powered analytics for Mercado Libre publications",
   "private": true,
   "scripts": {
     "dev": "next dev",

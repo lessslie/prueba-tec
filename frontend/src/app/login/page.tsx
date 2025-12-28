@@ -9,7 +9,7 @@ export default function LoginPage() {
     <div className={`${styles.page} ${styles.authPage}`}>
       <header className={`${styles.hero} ${styles.authHero}`}>
         <div>
-          <p className={styles.eyebrow}>RataLibre technical test</p>
+          <p className={styles.eyebrow}>MELIINSIGHTS</p>
           <h1>Iniciar sesion</h1>
           <p className={styles.subtitle}>
             Ingresa con tu cuenta para acceder al panel de publicaciones y recomendaciones.
