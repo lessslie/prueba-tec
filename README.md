@@ -72,9 +72,34 @@
 
 ---
 
-## 📸 Screenshots
+## 📸 Screenshots & Demo
 
-> 📝 *Screenshots coming soon - app is live at the demo link above!*
+### 🎥 Video Demo
+
+[![Watch Demo](https://img.shields.io/badge/▶️-Watch_Full_Demo-red?style=for-the-badge)](https://res.cloudinary.com/dlyty4dz4/video/upload/v1766938509/bandicam_2025-12-28_13-06-59-363_kfveet.mp4)
+
+<details>
+<summary>📷 Ver Screenshots</summary>
+
+### Landing Page
+![Landing Page](docs/screenshots/landing.png)
+
+### Dashboard con Publicaciones
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Análisis de IA
+![AI Analysis](docs/screenshots/ai-analysis.png)
+
+### Formulario de Login
+![Login](docs/screenshots/login.png)
+
+### Formulario de Registro
+![Register](docs/screenshots/register.png)
+
+### Crear Publicación Manual
+![Create Publication](docs/screenshots/create-publication.png)
+
+</details>
 
 ---
 
