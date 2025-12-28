@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
-import { API_BASE } from "../lib/config";
-import type { MeliStatusResponse, PublicationDto } from "../lib/types";
-import { CreateOrImport } from "../components/create-or-import";
-import { PublicationCard } from "../components/publication-card";
-import { clearToken, getToken } from "../lib/auth";
-import { authFetch } from "../lib/http";
+import { API_BASE } from "../../lib/config";
+import type { MeliStatusResponse, PublicationDto } from "../../lib/types";
+import { CreateOrImport } from "../../components/create-or-import";
+import { PublicationCard } from "../../components/publication-card";
+import { clearToken, getToken } from "../../lib/auth";
+import { authFetch } from "../../lib/http";
 
 export default function Home() {
   const router = useRouter();
