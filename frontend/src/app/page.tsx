@@ -126,17 +126,20 @@ export default function LandingPage() {
       <footer className={styles.footer}>
         <div className={styles.footerContainer}>
           <p className={styles.footerText}>
-            © 2025 MeliInsights. Hecho con ❤️ y ☕
+            © 2025 MeliInsights. Hecho con ❤️ y 🧉
           </p>
           <div className={styles.footerLinks}>
+            <a href="https://portfolio-agata.vercel.app/" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
+              Portfolio
+            </a>
             <a href="https://github.com/lessslie/prueba-tec" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
               GitHub
             </a>
+            <a href="https://www.linkedin.com/in/agata-morales/" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
+              LinkedIn
+            </a>
             <a href="https://prueba-tec-rmp9.onrender.com/api/docs" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
               API Docs
-            </a>
-            <a href="https://linkedin.com/in/agata-morales" className={styles.footerLink} target="_blank" rel="noopener noreferrer">
-              LinkedIn
             </a>
           </div>
         </div>

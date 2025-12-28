@@ -328,10 +328,10 @@ Este es un proyecto de portfolio personal, pero si encontrás algún bug o tené
 
 **Agata Morales**
 
-- Portfolio: [tu-portfolio.com](https://tu-portfolio.com)
-- LinkedIn: [linkedin.com/in/tu-perfil](https://linkedin.com/in/tu-perfil)
-- GitHub: [@lessslie](https://github.com/tu-usuario)
-- Email: tu@email.com
+- Portfolio: [portfolio-agata.vercel.app](https://portfolio-agata.vercel.app/)
+- LinkedIn: [linkedin.com/in/agata-morales](https://www.linkedin.com/in/agata-morales/)
+- GitHub: [@lessslie](https://github.com/lessslie)
+- Email: agata.morales92@gmail.com
 
 ---
 
@@ -355,6 +355,6 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para
 
 **⭐ Si te gustó este proyecto, dejá una estrella en GitHub!**
 
-Hecho con ❤️ y ☕ por [Agata Morales]
+Hecho con ❤️ y 🧉 por [Agata Morales]
 
 </div>
